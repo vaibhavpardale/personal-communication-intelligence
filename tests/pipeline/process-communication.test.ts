@@ -1,13 +1,23 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-const { analyzeCommunicationMock, saveAnalysisMock, saveAttentionDecisionMock } = vi.hoisted(() => ({
+const {
+  analyzeCommunicationMock,
+  generateExplanationMock,
+  saveAnalysisMock,
+  saveAttentionDecisionMock,
+} = vi.hoisted(() => ({
   analyzeCommunicationMock: vi.fn(),
+  generateExplanationMock: vi.fn(),
   saveAnalysisMock: vi.fn(),
   saveAttentionDecisionMock: vi.fn(),
 }));
 
 vi.mock("@/lib/ai/analyze-communication", () => ({
   analyzeCommunication: analyzeCommunicationMock,
+}));
+
+vi.mock("@/lib/ai/generate-explanation", () => ({
+  generateExplanation: generateExplanationMock,
 }));
 
 vi.mock("@/lib/db/communications", () => ({
@@ -63,24 +73,47 @@ const savedAttention = {
   reason: "A communication where this requires action, and the deadline is today or tomorrow.",
   matched_context: [],
   decision_version: "decision-engine-v1",
+  why_it_matters: "Your payment of INR 42,500 is due tomorrow.",
+  what_you_can_do: "Pay the credit card bill before tomorrow.",
+  explanation_model: "gpt-4o-mini",
+  explanation_prompt_version: "communication-explanation-v1",
   created_at: "2026-09-20T09:00:00.000Z",
 };
 
+const explanationSuccess = {
+  explanation: {
+    why_it_matters: "Your payment of INR 42,500 is due tomorrow.",
+    what_you_can_do: "Pay the credit card bill before tomorrow.",
+  },
+  model: "gpt-4o-mini",
+  promptVersion: "communication-explanation-v1",
+};
+
+function mockHappyPathUpTo(step: "analysis" | "explanation" | "attention" = "attention") {
+  analyzeCommunicationMock.mockResolvedValue({
+    analysis,
+    model: "gpt-4o-mini",
+    promptVersion: "communication-analysis-v1",
+  });
+  saveAnalysisMock.mockResolvedValue(savedAnalysis);
+  if (step === "explanation" || step === "attention") {
+    generateExplanationMock.mockResolvedValue(explanationSuccess);
+  }
+  if (step === "attention") {
+    saveAttentionDecisionMock.mockResolvedValue(savedAttention);
+  }
+}
+
 beforeEach(() => {
   analyzeCommunicationMock.mockReset();
+  generateExplanationMock.mockReset();
   saveAnalysisMock.mockReset();
   saveAttentionDecisionMock.mockReset();
 });
 
 describe("processCommunication", () => {
-  it("analyzes, decides attention, and persists both successfully", async () => {
-    analyzeCommunicationMock.mockResolvedValue({
-      analysis,
-      model: "gpt-4o-mini",
-      promptVersion: "communication-analysis-v1",
-    });
-    saveAnalysisMock.mockResolvedValue(savedAnalysis);
-    saveAttentionDecisionMock.mockResolvedValue(savedAttention);
+  it("analyzes, decides attention, explains, and persists everything successfully", async () => {
+    mockHappyPathUpTo();
 
     const result = await processCommunication(communication);
 
@@ -96,19 +129,19 @@ describe("processCommunication", () => {
       "communication-analysis-v1",
     );
     expect(saveAttentionDecisionMock).toHaveBeenCalledTimes(1);
-    const [communicationId, decision] = saveAttentionDecisionMock.mock.calls[0];
+    const [communicationId, decision, explanation] = saveAttentionDecisionMock.mock.calls[0];
     expect(communicationId).toBe("comm-1");
     expect(decision.level).toBe("ACT_NOW");
+    expect(explanation).toEqual({
+      why_it_matters: explanationSuccess.explanation.why_it_matters,
+      what_you_can_do: explanationSuccess.explanation.what_you_can_do,
+      model: "gpt-4o-mini",
+      promptVersion: "communication-explanation-v1",
+    });
   });
 
   it("passes personal context through to the decision engine", async () => {
-    analyzeCommunicationMock.mockResolvedValue({
-      analysis,
-      model: "gpt-4o-mini",
-      promptVersion: "communication-analysis-v1",
-    });
-    saveAnalysisMock.mockResolvedValue(savedAnalysis);
-    saveAttentionDecisionMock.mockResolvedValue(savedAttention);
+    mockHappyPathUpTo();
 
     const context = [
       {
@@ -129,7 +162,20 @@ describe("processCommunication", () => {
     expect(decision.scores.sender_importance).toBe(3);
   });
 
-  it("returns an error result instead of throwing when the AI call fails", async () => {
+  it("still saves the decision (with a null explanation) when explanation generation fails", async () => {
+    mockHappyPathUpTo("analysis");
+    generateExplanationMock.mockRejectedValue(new Error("OpenAI request timed out"));
+    saveAttentionDecisionMock.mockResolvedValue({ ...savedAttention, why_it_matters: null, what_you_can_do: null });
+
+    const result = await processCommunication(communication);
+
+    expect(result.status).toBe("success");
+    expect(saveAttentionDecisionMock).toHaveBeenCalledTimes(1);
+    const [, , explanation] = saveAttentionDecisionMock.mock.calls[0];
+    expect(explanation).toBeNull();
+  });
+
+  it("returns an error result instead of throwing when the AI analysis call fails", async () => {
     analyzeCommunicationMock.mockRejectedValue(new Error("OpenAI request timed out"));
 
     const result = await processCommunication(communication);
@@ -157,12 +203,7 @@ describe("processCommunication", () => {
   });
 
   it("returns an error result when saving the attention decision fails", async () => {
-    analyzeCommunicationMock.mockResolvedValue({
-      analysis,
-      model: "gpt-4o-mini",
-      promptVersion: "communication-analysis-v1",
-    });
-    saveAnalysisMock.mockResolvedValue(savedAnalysis);
+    mockHappyPathUpTo("explanation");
     saveAttentionDecisionMock.mockRejectedValue(new Error("db unavailable"));
 
     const result = await processCommunication(communication);

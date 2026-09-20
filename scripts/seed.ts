@@ -3,8 +3,13 @@ import { getSupabaseClient } from "../lib/db/supabase-client";
 import { isSupabaseConfigured } from "../lib/config";
 import { sampleCommunications } from "./sample-communications";
 import { samplePersonalContext } from "./sample-personal-context";
+import { goldenLabels } from "./golden-labels";
 
-async function seedCommunications(supabase: ReturnType<typeof getSupabaseClient>) {
+type SupabaseClient = ReturnType<typeof getSupabaseClient>;
+
+async function seedCommunications(
+  supabase: SupabaseClient,
+): Promise<{ id: string; subject: string }[]> {
   const { count, error: countError } = await supabase
     .from("communications")
     .select("*", { count: "exact", head: true });
@@ -16,16 +21,21 @@ async function seedCommunications(supabase: ReturnType<typeof getSupabaseClient>
 
   if ((count ?? 0) > 0) {
     console.log(
-      `communications table already has ${count} row(s). Skipping seed to avoid duplicates. ` +
-        `Truncate the table first if you want to reseed.`,
+      `communications table already has ${count} row(s); skipping insert (will still ` +
+        `seed/update personal context and the evaluation dataset).`,
     );
-    return;
+    const { data, error } = await supabase.from("communications").select("id, subject");
+    if (error) {
+      console.error(`Failed to load existing communications: ${error.message}`);
+      process.exit(1);
+    }
+    return data ?? [];
   }
 
   const { data, error } = await supabase
     .from("communications")
     .insert(sampleCommunications)
-    .select("id");
+    .select("id, subject");
 
   if (error) {
     console.error(`Failed to seed communications: ${error.message}`);
@@ -33,9 +43,10 @@ async function seedCommunications(supabase: ReturnType<typeof getSupabaseClient>
   }
 
   console.log(`Seeded ${data?.length ?? 0} sample communications.`);
+  return data ?? [];
 }
 
-async function seedPersonalContext(supabase: ReturnType<typeof getSupabaseClient>) {
+async function seedPersonalContext(supabase: SupabaseClient) {
   const { data, error } = await supabase
     .from("personal_context")
     .upsert(samplePersonalContext, { onConflict: "context_type,key" })
@@ -49,6 +60,46 @@ async function seedPersonalContext(supabase: ReturnType<typeof getSupabaseClient
   console.log(`Seeded/updated ${data?.length ?? 0} personal context entries.`);
 }
 
+async function seedEvaluationDataset(
+  supabase: SupabaseClient,
+  communications: { id: string; subject: string }[],
+) {
+  const bySubject = new Map(communications.map((c) => [c.subject, c.id]));
+
+  const rows = goldenLabels
+    .map((label) => {
+      const communicationId = bySubject.get(label.subject);
+      if (!communicationId) return null;
+      return {
+        communication_id: communicationId,
+        expected_category: label.expected_category,
+        expected_intent: label.expected_intent,
+        expected_attention_level: label.expected_attention_level,
+        dataset_split: label.dataset_split,
+      };
+    })
+    .filter((row): row is NonNullable<typeof row> => row !== null);
+
+  if (rows.length < goldenLabels.length) {
+    console.warn(
+      `Only matched ${rows.length}/${goldenLabels.length} golden labels to seeded ` +
+        `communications by subject.`,
+    );
+  }
+
+  const { data, error } = await supabase
+    .from("evaluation_dataset")
+    .upsert(rows, { onConflict: "communication_id" })
+    .select("id");
+
+  if (error) {
+    console.error(`Failed to seed evaluation dataset: ${error.message}`);
+    process.exit(1);
+  }
+
+  console.log(`Seeded/updated ${data?.length ?? 0} evaluation dataset entries.`);
+}
+
 async function main() {
   if (!isSupabaseConfigured()) {
     console.error(
@@ -59,8 +110,9 @@ async function main() {
 
   const supabase = getSupabaseClient();
 
-  await seedCommunications(supabase);
+  const communications = await seedCommunications(supabase);
   await seedPersonalContext(supabase);
+  await seedEvaluationDataset(supabase, communications);
 }
 
 main();

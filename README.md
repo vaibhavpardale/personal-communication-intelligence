@@ -41,7 +41,7 @@ limitations at each stage).
 3. Run the migrations in `supabase/migrations/` (in order) against your Supabase project (via the
    Supabase SQL editor, or the Supabase CLI once you have it installed locally).
 
-4. Seed sample data (communications + personal context):
+4. Seed sample data (communications + personal context + the golden evaluation dataset):
 
    ```bash
    npm run seed
@@ -62,7 +62,7 @@ limitations at each stage).
 | `npm run lint` | ESLint |
 | `npx tsc --noEmit` | TypeScript type check |
 | `npm test` | Run the test suite (Vitest) |
-| `npm run seed` | Seed sample communications + personal context into Supabase |
+| `npm run seed` | Seed sample communications, personal context, and the golden evaluation dataset |
 
 ## Project structure
 
@@ -74,7 +74,8 @@ lib/
   db/                   Supabase client and data access
   decision-engine/      Deterministic attention scoring (no AI, no DB)
   context/              Personal context types
-  pipeline/             Orchestrates AI understanding -> decision -> persistence
+  evaluation/           Pure metrics (accuracy, precision/recall) over the golden dataset
+  pipeline/             Orchestrates AI understanding -> decision -> explanation -> persistence
   validation/           Zod schemas for AI output
   observability/        Minimal structured logging
 types/                  Shared TypeScript types

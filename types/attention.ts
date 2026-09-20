@@ -10,6 +10,10 @@ export interface AttentionDecision {
   reason: string;
   matched_context: MatchedContextEntry[] | null;
   decision_version: string;
+  why_it_matters: string | null;
+  what_you_can_do: string | null;
+  explanation_model: string | null;
+  explanation_prompt_version: string | null;
   created_at: string;
 }
 

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AnalyzeButton } from "@/components/communications/analyze-button";
+import { FeedbackButtons } from "@/components/communications/feedback-buttons";
 import { getCommunicationWithAttention } from "@/lib/db/communications";
 import { isSupabaseConfigured } from "@/lib/config";
 import { LEVEL_META } from "@/lib/decision-engine/level-meta";
@@ -111,10 +112,31 @@ export default async function CommunicationDetailPage({
                 <Badge variant={LEVEL_META[attention.level].badgeVariant} className="text-sm">
                   {LEVEL_META[attention.level].label}
                 </Badge>
-                <p>{attention.reason}</p>
+
+                {attention.why_it_matters && attention.what_you_can_do ? (
+                  <div className="space-y-2 rounded-md border bg-muted/40 p-3">
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground">
+                        Why does this matter?
+                      </div>
+                      <p>{attention.why_it_matters}</p>
+                    </div>
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground">
+                        What can you do?
+                      </div>
+                      <p>{attention.what_you_can_do}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No AI explanation available for this decision yet.
+                  </p>
+                )}
 
                 <div>
                   <div className="mb-2 font-medium">Why was this classified this way?</div>
+                  <p className="mb-2 text-muted-foreground">{attention.reason}</p>
                   <div className="space-y-1">
                     {(Object.keys(attention.scores) as (keyof DecisionFactorScores)[]).map((key) => (
                       <ScoreRow key={key} label={key} value={attention.scores[key]} />
@@ -137,6 +159,12 @@ export default async function CommunicationDetailPage({
 
                 <Row label="Overall score" value={`${attention.overall_score.toFixed(2)} / 5`} />
                 <Row label="Decision version" value={attention.decision_version} />
+                {attention.explanation_model && (
+                  <Row
+                    label="Explanation model"
+                    value={`${attention.explanation_model} · ${attention.explanation_prompt_version}`}
+                  />
+                )}
               </>
             ) : (
               <p className="text-muted-foreground">Not yet decided.</p>
@@ -144,6 +172,11 @@ export default async function CommunicationDetailPage({
           </CardContent>
         </Card>
       )}
+
+      <div>
+        <p className="mb-2 text-sm text-muted-foreground">Was this useful?</p>
+        <FeedbackButtons communicationId={communication.id} />
+      </div>
     </main>
   );
 }
