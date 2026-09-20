@@ -37,6 +37,9 @@ limitations at each stage).
    You need:
    - An OpenAI API key (`OPENAI_API_KEY`)
    - A Supabase project URL and **service role** key (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`)
+   - Optional, for real Gmail import: a Google Cloud OAuth 2.0 Client ID (`GMAIL_CLIENT_ID`,
+     `GMAIL_CLIENT_SECRET`, `GMAIL_REDIRECT_URI`) — see "Gmail setup" below. Everything else works
+     without this; the Settings page says so plainly if it's missing.
 
 3. Run the migrations in `supabase/migrations/` (in order) against your Supabase project (via the
    Supabase SQL editor, or the Supabase CLI once you have it installed locally).
@@ -52,6 +55,20 @@ limitations at each stage).
    ```bash
    npm run dev
    ```
+
+## Gmail setup (optional)
+
+1. In the [Google Cloud Console](https://console.cloud.google.com/), create a project (or use an
+   existing one) and enable the **Gmail API**.
+2. Under APIs & Services > Credentials, create an **OAuth 2.0 Client ID** (Web application).
+3. Add `http://localhost:3000/api/gmail/callback` (or your deployed URL's equivalent) as an
+   authorized redirect URI.
+4. Put the client ID/secret and that same redirect URI into `.env.local` as `GMAIL_CLIENT_ID`,
+   `GMAIL_CLIENT_SECRET`, `GMAIL_REDIRECT_URI`.
+5. Go to `/settings` in the app and click "Connect Gmail". Only the read-only
+   `gmail.readonly` scope is requested — this app cannot send, delete, or modify anything in your
+   mailbox. From Settings you can also disconnect the account (revokes stored access) or
+   permanently delete everything imported from Gmail, independently of each other.
 
 ## Scripts
 
@@ -75,6 +92,7 @@ lib/
   decision-engine/      Deterministic attention scoring (no AI, no DB)
   context/              Personal context types
   evaluation/           Pure metrics (accuracy, precision/recall) over the golden dataset
+  gmail/                OAuth, Gmail API client, and normalization into the Communication model
   pipeline/             Orchestrates AI understanding -> decision -> explanation -> persistence
   validation/           Zod schemas for AI output
   observability/        Minimal structured logging
@@ -85,9 +103,18 @@ tests/                  Vitest unit/integration tests
 docs/                   Per-phase reports and architecture notes
 ```
 
-## Privacy: what is sent to OpenAI
+## Privacy: what is sent to OpenAI, and what Gmail data is stored
 
-For every communication analyzed, the sender address, sender name, subject, full message body,
-and received timestamp are sent to OpenAI to extract structured facts (see
-`lib/ai/prompts/communication-analysis-v1.ts`). Nothing else is sent. See
-[`docs/phase-1.md`](./docs/phase-1.md) for the full data-flow explanation.
+For every communication analyzed (sample or Gmail-imported), the sender address, sender name,
+subject, full message body (truncated to 5,000 characters for Gmail), and received timestamp are
+sent to OpenAI to extract structured facts (see `lib/ai/prompts/communication-analysis-v1.ts`). A
+second call sends the extracted facts, decision, and matched personal context to generate an
+explanation (see `lib/ai/prompts/communication-explanation-v1.ts`). Nothing else — no other
+communications, no OAuth tokens, no full mailbox — is ever sent to OpenAI.
+
+Gmail OAuth access/refresh tokens are stored server-side only (Supabase, accessed via the service
+role key) and are never sent to the client or to OpenAI. You can revoke stored access
+("Disconnect") or permanently delete every communication imported from Gmail ("Delete imported
+Gmail data") from `/settings`, independently of each other. See
+[`docs/phase-4.md`](./docs/phase-4.md) for the full Gmail data-flow explanation, and
+[`docs/phase-1.md`](./docs/phase-1.md) for the base pipeline.

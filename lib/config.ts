@@ -12,6 +12,11 @@ export const config = {
     url: process.env.SUPABASE_URL ?? "",
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
   },
+  gmail: {
+    clientId: process.env.GMAIL_CLIENT_ID ?? "",
+    clientSecret: process.env.GMAIL_CLIENT_SECRET ?? "",
+    redirectUri: process.env.GMAIL_REDIRECT_URI ?? "",
+  },
   app: {
     url: process.env.APP_URL ?? "http://localhost:3000",
   },
@@ -23,4 +28,12 @@ export function isOpenAiConfigured(): boolean {
 
 export function isSupabaseConfigured(): boolean {
   return config.supabase.url.length > 0 && config.supabase.serviceRoleKey.length > 0;
+}
+
+export function isGmailConfigured(): boolean {
+  return (
+    config.gmail.clientId.length > 0 &&
+    config.gmail.clientSecret.length > 0 &&
+    config.gmail.redirectUri.length > 0
+  );
 }

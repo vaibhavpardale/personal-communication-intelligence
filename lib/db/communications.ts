@@ -104,6 +104,44 @@ export async function getCommunicationWithAttention(
   return splitAttention(data as RawAttentionJoinRow);
 }
 
+/**
+ * Inserts communications with an `external_id` (e.g. from Gmail), skipping
+ * ones already imported (matched on `source` + `external_id`). Returns only
+ * the newly-inserted rows, so the caller can run just those through the
+ * pipeline on a re-sync.
+ */
+export async function upsertExternalCommunications(
+  rows: (NewCommunication & { external_id: string })[],
+): Promise<Communication[]> {
+  if (rows.length === 0) return [];
+
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("communications")
+    .upsert(rows, { onConflict: "source,external_id", ignoreDuplicates: true })
+    .select("*");
+
+  if (error) {
+    throw new Error(`Failed to upsert external communications: ${error.message}`);
+  }
+
+  return (data ?? []) as Communication[];
+}
+
+export async function deleteCommunicationsBySource(source: string): Promise<number> {
+  const supabase = getSupabaseClient();
+  const { error, count } = await supabase
+    .from("communications")
+    .delete({ count: "exact" })
+    .eq("source", source);
+
+  if (error) {
+    throw new Error(`Failed to delete communications for source "${source}": ${error.message}`);
+  }
+
+  return count ?? 0;
+}
+
 export async function insertCommunications(
   rows: NewCommunication[],
 ): Promise<Communication[]> {

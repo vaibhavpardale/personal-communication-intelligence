@@ -35,10 +35,14 @@ export interface Communication {
   subject: string;
   content: string;
   received_at: string;
+  /** Source-native id (e.g. Gmail message id), used to avoid re-importing the same item. */
+  external_id: string | null;
   created_at: string;
 }
 
-export type NewCommunication = Omit<Communication, "id" | "created_at">;
+export type NewCommunication = Omit<Communication, "id" | "created_at" | "external_id"> & {
+  external_id?: string | null;
+};
 
 /** AI-derived structured understanding of a communication. */
 export interface CommunicationAnalysis {
