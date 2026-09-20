@@ -56,12 +56,17 @@ limitations at each stage).
    npm run dev
    ```
 
+   This runs on **http://localhost:3005** (pinned in `package.json`, not the Next.js default of
+   3000) so the Gmail OAuth redirect URI below stays stable regardless of what else is running
+   locally. Change the port in `package.json`'s `dev`/`start` scripts, `.env.local`, and the
+   OAuth client's redirect URI together if you need a different one.
+
 ## Gmail setup (optional)
 
 1. In the [Google Cloud Console](https://console.cloud.google.com/), create a project (or use an
    existing one) and enable the **Gmail API**.
 2. Under APIs & Services > Credentials, create an **OAuth 2.0 Client ID** (Web application).
-3. Add `http://localhost:3000/api/gmail/callback` (or your deployed URL's equivalent) as an
+3. Add `http://localhost:3005/api/gmail/callback` (or your deployed URL's equivalent) as an
    authorized redirect URI.
 4. Put the client ID/secret and that same redirect URI into `.env.local` as `GMAIL_CLIENT_ID`,
    `GMAIL_CLIENT_SECRET`, `GMAIL_REDIRECT_URI`.
