@@ -1,4 +1,10 @@
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
+
+// Match Next.js's own convention: .env.local holds real local secrets and
+// takes precedence over .env (which is typically just committed defaults).
+loadEnv({ path: ".env" });
+loadEnv({ path: ".env.local", override: true });
+
 import { getSupabaseClient } from "../lib/db/supabase-client";
 import { isSupabaseConfigured } from "../lib/config";
 import { sampleCommunications } from "./sample-communications";

@@ -6,7 +6,9 @@ import type { AttentionLevel } from "@/lib/decision-engine/types";
 
 export type EvaluationExampleRow = EvaluationExample & { subject: string; dataset_split: DatasetSplit };
 
-interface RawEvaluationRow {
+type OneOrMany<T> = T | T[] | null;
+
+export interface RawEvaluationRow {
   communication_id: string;
   expected_category: CommunicationCategory;
   expected_intent: CommunicationIntent;
@@ -14,9 +16,33 @@ interface RawEvaluationRow {
   dataset_split: DatasetSplit;
   communications: {
     subject: string;
-    communication_analysis: { category: CommunicationCategory; intent: CommunicationIntent }[] | null;
-    attention_decisions: { level: AttentionLevel }[] | null;
+    communication_analysis: OneOrMany<{ category: CommunicationCategory; intent: CommunicationIntent }>;
+    attention_decisions: OneOrMany<{ level: AttentionLevel }>;
   } | null;
+}
+
+/** PostgREST embeds a to-one relationship (unique FK) as an object, but a
+ * to-many relationship as an array — communication_analysis/attention_decisions
+ * are unique per communication, so this normalizes either shape to one value. */
+function firstOrNull<T>(value: OneOrMany<T>): T | null {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
+}
+
+export function mapEvaluationRow(row: RawEvaluationRow): EvaluationExampleRow {
+  const analysis = firstOrNull(row.communications?.communication_analysis ?? null);
+  const attention = firstOrNull(row.communications?.attention_decisions ?? null);
+  return {
+    communication_id: row.communication_id,
+    subject: row.communications?.subject ?? "(unknown)",
+    expected_category: row.expected_category,
+    expected_intent: row.expected_intent,
+    expected_attention_level: row.expected_attention_level,
+    dataset_split: row.dataset_split,
+    actual_category: analysis?.category ?? null,
+    actual_intent: analysis?.intent ?? null,
+    actual_attention_level: attention?.level ?? null,
+  };
 }
 
 export async function listEvaluationExamples(): Promise<EvaluationExampleRow[]> {
@@ -30,21 +56,7 @@ export async function listEvaluationExamples(): Promise<EvaluationExampleRow[]> 
     throw new Error(`Failed to list evaluation dataset: ${error.message}`);
   }
 
-  return ((data ?? []) as unknown as RawEvaluationRow[]).map((row) => {
-    const analysis = row.communications?.communication_analysis?.[0] ?? null;
-    const attention = row.communications?.attention_decisions?.[0] ?? null;
-    return {
-      communication_id: row.communication_id,
-      subject: row.communications?.subject ?? "(unknown)",
-      expected_category: row.expected_category,
-      expected_intent: row.expected_intent,
-      expected_attention_level: row.expected_attention_level,
-      dataset_split: row.dataset_split,
-      actual_category: analysis?.category ?? null,
-      actual_intent: analysis?.intent ?? null,
-      actual_attention_level: attention?.level ?? null,
-    };
-  });
+  return ((data ?? []) as unknown as RawEvaluationRow[]).map(mapEvaluationRow);
 }
 
 export async function insertEvaluationDataset(

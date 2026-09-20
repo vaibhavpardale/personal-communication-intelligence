@@ -2,23 +2,46 @@
  * Centralized application configuration. All environment variable access
  * should go through this module (Rule: centralize model/config, no
  * hard-coded secrets).
+ *
+ * Each field is a getter, not a value computed once at import time: in
+ * Next.js the env is already loaded before any module runs, but in
+ * standalone scripts (scripts/seed.ts) `dotenv` runs after this module has
+ * already been imported (ES import statements are hoisted above other
+ * code), so eagerly-read values would be frozen as empty strings. Getters
+ * read `process.env` at access time instead, which is correct either way.
  */
 export const config = {
   openai: {
-    apiKey: process.env.OPENAI_API_KEY ?? "",
-    model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
+    get apiKey() {
+      return process.env.OPENAI_API_KEY ?? "";
+    },
+    get model() {
+      return process.env.OPENAI_MODEL ?? "gpt-4o-mini";
+    },
   },
   supabase: {
-    url: process.env.SUPABASE_URL ?? "",
-    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
+    get url() {
+      return process.env.SUPABASE_URL ?? "";
+    },
+    get serviceRoleKey() {
+      return process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+    },
   },
   gmail: {
-    clientId: process.env.GMAIL_CLIENT_ID ?? "",
-    clientSecret: process.env.GMAIL_CLIENT_SECRET ?? "",
-    redirectUri: process.env.GMAIL_REDIRECT_URI ?? "",
+    get clientId() {
+      return process.env.GMAIL_CLIENT_ID ?? "";
+    },
+    get clientSecret() {
+      return process.env.GMAIL_CLIENT_SECRET ?? "";
+    },
+    get redirectUri() {
+      return process.env.GMAIL_REDIRECT_URI ?? "";
+    },
   },
   app: {
-    url: process.env.APP_URL ?? "http://localhost:3000",
+    get url() {
+      return process.env.APP_URL ?? "http://localhost:3000";
+    },
   },
 };
 
