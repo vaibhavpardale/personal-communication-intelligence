@@ -7,6 +7,7 @@ import type {
   CommunicationWithAnalysis,
   NewCommunication,
 } from "@/types/communication";
+import type { AttentionDecision, CommunicationWithAttention } from "@/types/attention";
 
 interface RawJoinRow extends Communication {
   communication_analysis: CommunicationAnalysis[] | CommunicationAnalysis | null;
@@ -18,6 +19,25 @@ function splitAnalysis(row: RawJoinRow): CommunicationWithAnalysis {
     ? (communication_analysis[0] ?? null)
     : (communication_analysis ?? null);
   return { ...communication, analysis };
+}
+
+interface RawAttentionJoinRow extends Communication {
+  communication_analysis: CommunicationAnalysis[] | CommunicationAnalysis | null;
+  attention_decisions: AttentionDecision[] | AttentionDecision | null;
+}
+
+function firstOrNull<T>(value: T[] | T | null): T | null {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
+}
+
+function splitAttention(row: RawAttentionJoinRow): CommunicationWithAttention {
+  const { communication_analysis, attention_decisions, ...communication } = row;
+  return {
+    ...communication,
+    analysis: firstOrNull(communication_analysis),
+    attention: firstOrNull(attention_decisions),
+  };
 }
 
 export async function listCommunicationsWithAnalysis(): Promise<CommunicationWithAnalysis[]> {
@@ -50,6 +70,38 @@ export async function getCommunicationWithAnalysis(
   if (!data) return null;
 
   return splitAnalysis(data as RawJoinRow);
+}
+
+export async function listCommunicationsWithAttention(): Promise<CommunicationWithAttention[]> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("communications")
+    .select("*, communication_analysis(*), attention_decisions(*)")
+    .order("received_at", { ascending: false });
+
+  if (error) {
+    throw new Error(`Failed to list communications with attention: ${error.message}`);
+  }
+
+  return ((data ?? []) as RawAttentionJoinRow[]).map(splitAttention);
+}
+
+export async function getCommunicationWithAttention(
+  id: string,
+): Promise<CommunicationWithAttention | null> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("communications")
+    .select("*, communication_analysis(*), attention_decisions(*)")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to load communication ${id}: ${error.message}`);
+  }
+  if (!data) return null;
+
+  return splitAttention(data as RawAttentionJoinRow);
 }
 
 export async function insertCommunications(

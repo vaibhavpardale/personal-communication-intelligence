@@ -10,8 +10,9 @@ import {
 } from "@/components/ui/table";
 import { AnalyzeAllButton } from "@/components/communications/analyze-all-button";
 import { AnalyzeButton } from "@/components/communications/analyze-button";
-import { listCommunicationsWithAnalysis } from "@/lib/db/communications";
+import { listCommunicationsWithAttention } from "@/lib/db/communications";
 import { isSupabaseConfigured } from "@/lib/config";
+import { LEVEL_META } from "@/lib/decision-engine/level-meta";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,7 @@ export default async function CommunicationsPage() {
 
   let communications;
   try {
-    communications = await listCommunicationsWithAnalysis();
+    communications = await listCommunicationsWithAttention();
   } catch (error) {
     return (
       <EmptyState
@@ -67,6 +68,7 @@ export default async function CommunicationsPage() {
               <TableHead>Sender</TableHead>
               <TableHead>Subject</TableHead>
               <TableHead>Category</TableHead>
+              <TableHead>Attention</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Action</TableHead>
@@ -89,6 +91,15 @@ export default async function CommunicationsPage() {
                 <TableCell>
                   {c.analysis ? (
                     <Badge variant="secondary">{c.analysis.category}</Badge>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {c.attention ? (
+                    <Badge variant={LEVEL_META[c.attention.level].badgeVariant}>
+                      {LEVEL_META[c.attention.level].label}
+                    </Badge>
                   ) : (
                     <span className="text-xs text-muted-foreground">—</span>
                   )}

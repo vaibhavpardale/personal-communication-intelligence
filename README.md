@@ -38,10 +38,10 @@ limitations at each stage).
    - An OpenAI API key (`OPENAI_API_KEY`)
    - A Supabase project URL and **service role** key (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`)
 
-3. Run the database migration in `supabase/migrations/` against your Supabase project (via the
+3. Run the migrations in `supabase/migrations/` (in order) against your Supabase project (via the
    Supabase SQL editor, or the Supabase CLI once you have it installed locally).
 
-4. Seed sample data:
+4. Seed sample data (communications + personal context):
 
    ```bash
    npm run seed
@@ -62,7 +62,7 @@ limitations at each stage).
 | `npm run lint` | ESLint |
 | `npx tsc --noEmit` | TypeScript type check |
 | `npm test` | Run the test suite (Vitest) |
-| `npm run seed` | Seed the sample communications dataset into Supabase |
+| `npm run seed` | Seed sample communications + personal context into Supabase |
 
 ## Project structure
 
@@ -72,7 +72,9 @@ components/             UI components (shadcn/ui in components/ui)
 lib/
   ai/                   OpenAI client, prompts, structured extraction
   db/                   Supabase client and data access
-  pipeline/             Orchestrates AI understanding + persistence
+  decision-engine/      Deterministic attention scoring (no AI, no DB)
+  context/              Personal context types
+  pipeline/             Orchestrates AI understanding -> decision -> persistence
   validation/           Zod schemas for AI output
   observability/        Minimal structured logging
 types/                  Shared TypeScript types

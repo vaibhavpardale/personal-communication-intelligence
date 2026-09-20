@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AnalyzeButton } from "@/components/communications/analyze-button";
-import { getCommunicationWithAnalysis } from "@/lib/db/communications";
+import { getCommunicationWithAttention } from "@/lib/db/communications";
 import { isSupabaseConfigured } from "@/lib/config";
+import { LEVEL_META } from "@/lib/decision-engine/level-meta";
+import type { DecisionFactorScores } from "@/lib/decision-engine/types";
 
 export const dynamic = "force-dynamic";
 
@@ -29,13 +31,13 @@ export default async function CommunicationDetailPage({
     );
   }
 
-  const communication = await getCommunicationWithAnalysis(id);
+  const communication = await getCommunicationWithAttention(id);
 
   if (!communication) {
     notFound();
   }
 
-  const { analysis } = communication;
+  const { analysis, attention } = communication;
 
   return (
     <main className="mx-auto max-w-3xl space-y-6 p-8">
@@ -97,6 +99,51 @@ export default async function CommunicationDetailPage({
           )}
         </CardContent>
       </Card>
+
+      {analysis && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Attention Decision</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            {attention ? (
+              <>
+                <Badge variant={LEVEL_META[attention.level].badgeVariant} className="text-sm">
+                  {LEVEL_META[attention.level].label}
+                </Badge>
+                <p>{attention.reason}</p>
+
+                <div>
+                  <div className="mb-2 font-medium">Why was this classified this way?</div>
+                  <div className="space-y-1">
+                    {(Object.keys(attention.scores) as (keyof DecisionFactorScores)[]).map((key) => (
+                      <ScoreRow key={key} label={key} value={attention.scores[key]} />
+                    ))}
+                  </div>
+                </div>
+
+                {attention.matched_context && attention.matched_context.length > 0 && (
+                  <div>
+                    <div className="mb-1 font-medium">Personal context used</div>
+                    <ul className="list-inside list-disc text-muted-foreground">
+                      {attention.matched_context.map((m, i) => (
+                        <li key={i}>
+                          {m.key} ({m.context_type}, importance {m.importance}/5) — matched on {m.matched_on}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <Row label="Overall score" value={`${attention.overall_score.toFixed(2)} / 5`} />
+                <Row label="Decision version" value={attention.decision_version} />
+              </>
+            ) : (
+              <p className="text-muted-foreground">Not yet decided.</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </main>
   );
 }
@@ -106,6 +153,24 @@ function Row({ label, value }: { label: string; value: string }) {
     <div className="grid grid-cols-[140px_1fr] gap-2">
       <div className="text-muted-foreground">{label}</div>
       <div>{value}</div>
+    </div>
+  );
+}
+
+function ScoreRow({ label, value }: { label: string; value: number }) {
+  const niceLabel = label
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+  return (
+    <div className="grid grid-cols-[180px_1fr] items-center gap-2">
+      <div className="text-muted-foreground">{niceLabel}</div>
+      <div className="flex items-center gap-2">
+        <div className="h-1.5 w-24 overflow-hidden rounded-full bg-muted">
+          <div className="h-full bg-foreground" style={{ width: `${(value / 5) * 100}%` }} />
+        </div>
+        <span className="text-xs text-muted-foreground">{value}/5</span>
+      </div>
     </div>
   );
 }
