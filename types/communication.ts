@@ -25,6 +25,8 @@ export const INTENTS = [
 
 export type CommunicationIntent = (typeof INTENTS)[number];
 
+export type UserStatus = "unread" | "read" | "hidden";
+
 /** Raw communication as received from a source (sample data, Gmail, ...). */
 export interface Communication {
   id: string;
@@ -37,6 +39,8 @@ export interface Communication {
   received_at: string;
   /** Source-native id (e.g. Gmail message id), used to avoid re-importing the same item. */
   external_id: string | null;
+  /** What the user has done with it in the app. Absent until migration 0006 is applied. */
+  user_status?: UserStatus;
   created_at: string;
 }
 

@@ -54,7 +54,6 @@ export default async function EvaluationPage() {
       note: "Frozen, hand-labeled sample communications.",
     },
   ] as const;
-  const hasGmailLabels = examples.some((e) => e.dataset === "gmail");
 
   return (
     <main className="mx-auto max-w-4xl space-y-10 p-8">
@@ -62,21 +61,7 @@ export default async function EvaluationPage() {
       {sections.map((section) => {
         const rows = examples.filter((e) => e.dataset === section.key);
         if (rows.length === 0) return null;
-        const content = (
-          <EvaluationSection key={section.key} title={section.title} note={section.note} examples={rows} />
-        );
-        // Real-inbox results lead; the golden set stays available but folded away.
-        if (section.key === "golden" && hasGmailLabels) {
-          return (
-            <details key={section.key}>
-              <summary className="mb-6 cursor-pointer text-sm text-muted-foreground hover:text-foreground">
-                Show golden set results (synthetic samples, {rows.length} examples)
-              </summary>
-              {content}
-            </details>
-          );
-        }
-        return content;
+        return <EvaluationSection key={section.key} title={section.title} note={section.note} examples={rows} />;
       })}
     </main>
   );
@@ -147,11 +132,11 @@ function EvaluationSection({
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Examples</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
+          <details className="rounded-xl ring-1 ring-foreground/10">
+            <summary className="cursor-pointer px-4 py-3 text-sm font-medium hover:bg-muted/50">
+              Examples ({examples.filter((e) => e.actual_attention_level).length})
+            </summary>
+            <div className="space-y-2 px-4 pb-4 text-sm">
               {examples
                 .filter((e) => e.actual_attention_level)
                 .map((e) => (
@@ -175,8 +160,8 @@ function EvaluationSection({
                     </Badge>
                   </div>
                 ))}
-            </CardContent>
-          </Card>
+            </div>
+          </details>
         </>
       )}
     </section>

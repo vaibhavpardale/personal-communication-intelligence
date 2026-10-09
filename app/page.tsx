@@ -4,6 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AnalyzeAllButton } from "@/components/communications/analyze-all-button";
 import { SyncButton } from "@/components/gmail/sync-button";
+import { ItemActions } from "@/components/communications/item-actions";
+import { SampleToggle } from "@/components/sample-toggle";
+import { shouldShowSample } from "@/lib/sample-visibility";
 import { getActiveGmailConnection } from "@/lib/db/gmail-connection";
 import { formatRelative } from "@/lib/utils";
 import { listCommunicationsWithAttention } from "@/lib/db/communications";
@@ -16,12 +19,7 @@ export const dynamic = "force-dynamic";
 
 const NEEDS_ATTENTION_LEVELS: AttentionLevel[] = ["ACT_NOW", "REVIEW", "WATCH"];
 
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<{ sample?: string }>;
-}) {
-  const { sample } = await searchParams;
+export default async function Home() {
   if (!isSupabaseConfigured()) {
     return (
       <EmptyShell
@@ -55,11 +53,15 @@ export default async function Home({
     );
   }
 
-  // Once real Gmail mail exists, show only that by default; sample data stays one click away.
+  // Sample (golden-set) data is hidden by default once real Gmail mail exists; the toggle overrides.
   const hasGmail = communications.some((c) => c.source === "gmail");
-  const showSample = sample === "1" || !hasGmail;
+  const showSample = await shouldShowSample(hasGmail);
   const sampleCount = communications.filter((c) => c.source === "sample").length;
-  if (!showSample) communications = communications.filter((c) => c.source === "gmail");
+  if (!showSample) communications = communications.filter((c) => c.source !== "sample");
+
+  // Read or hidden items leave the feed; they stay reachable under "Done & hidden".
+  const archived = communications.filter((c) => (c.user_status ?? "unread") !== "unread");
+  communications = communications.filter((c) => (c.user_status ?? "unread") === "unread");
 
   const unanalyzed = communications.filter((c) => !c.attention);
   const byLevel = new Map<AttentionLevel, CommunicationWithAttention[]>();
@@ -92,19 +94,10 @@ export default async function Home({
             <p className="mt-1 text-muted-foreground">
               {needsAttentionCount} thing{needsAttentionCount === 1 ? "" : "s"} need action or review
               out of {communications.length}
-              {hasGmail && sampleCount > 0 && (
-                <>
-                  {" · "}
-                  {showSample ? "all data" : "Gmail only"}
-                  {" · "}
-                  <Link href={showSample ? "/" : "/?sample=1"} className="underline hover:text-foreground">
-                    {showSample ? "Hide sample data" : `Show sample data (${sampleCount})`}
-                  </Link>
-                </>
-              )}
             </p>
           </div>
           <div className="flex flex-col items-end gap-2">
+            {sampleCount > 0 && <SampleToggle on={showSample} />}
             {gmailConnected && <SyncButton />}
             {unanalyzed.length > 0 && <AnalyzeAllButton />}
           </div>
@@ -137,7 +130,14 @@ export default async function Home({
         return <LevelSection key={level} level={level} items={items} />;
       })}
 
+      {needsAttentionCount === 0 && (
+        <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+          All caught up. Nothing needs your attention right now.
+        </p>
+      )}
+
       <EverythingElseSection items={everythingElse} />
+      <ArchivedSection items={archived} />
     </main>
   );
 }
@@ -161,30 +161,32 @@ function LevelSection({
       </div>
       <div className="space-y-3">
         {items.map((c) => (
-          <Link
-            key={c.id}
-            href={`/communications/${c.id}`}
-            className={`block rounded-lg border p-4 transition-shadow hover:shadow-md ${meta.tint}`}
-          >
-            <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-              <span className="truncate">
-                {c.sender_name ?? c.sender} · {formatRelative(c.received_at)}
-              </span>
-              {c.analysis && <Badge variant="outline">{c.analysis.category}</Badge>}
-            </div>
-            <div className="mt-1 font-medium">{c.subject}</div>
-            {c.attention && (
-              <div className="mt-2 space-y-1 text-sm">
-                <p className="text-foreground/80">{c.attention.why_it_matters ?? c.attention.reason}</p>
-                {c.attention.what_you_can_do && (
-                  <p className="text-muted-foreground">
-                    <span className="font-medium text-foreground">Next: </span>
-                    {c.attention.what_you_can_do}
-                  </p>
-                )}
+          <div key={c.id} className={`rounded-lg border transition-shadow hover:shadow-md ${meta.tint}`}>
+            <Link href={`/communications/${c.id}`} className="block p-4 pb-2">
+              <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                <span className="truncate">
+                  {c.sender_name ?? c.sender} · {formatRelative(c.received_at)}
+                  {c.source === "sample" && " · sample"}
+                </span>
+                {c.analysis && <Badge variant="outline">{c.analysis.category}</Badge>}
               </div>
-            )}
-          </Link>
+              <div className="mt-1 font-medium">{c.subject}</div>
+              {c.attention && (
+                <div className="mt-2 space-y-1 text-sm">
+                  <p className="text-foreground/80">{c.attention.why_it_matters ?? c.attention.reason}</p>
+                  {c.attention.what_you_can_do && (
+                    <p className="text-muted-foreground">
+                      <span className="font-medium text-foreground">Next: </span>
+                      {c.attention.what_you_can_do}
+                    </p>
+                  )}
+                </div>
+              )}
+            </Link>
+            <div className="px-4 pb-3">
+              <ItemActions id={c.id} status="unread" />
+            </div>
+          </div>
         ))}
       </div>
     </section>
@@ -221,6 +223,31 @@ function EverythingElseSection({ items }: { items: CommunicationWithAttention[] 
         <Link href="/communications" className="mt-3 inline-block text-sm text-muted-foreground hover:underline">
           Open full list with filters →
         </Link>
+      </details>
+    </section>
+  );
+}
+
+function ArchivedSection({ items }: { items: CommunicationWithAttention[] }) {
+  if (items.length === 0) return null;
+  return (
+    <section className="border-t pt-6">
+      <details>
+        <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
+          Done &amp; hidden · {items.length}
+        </summary>
+        <ul className="mt-3 divide-y rounded-lg border text-sm">
+          {items.map((c) => (
+            <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+              <Link href={`/communications/${c.id}`} className="min-w-0 flex-1 truncate hover:underline">
+                <span className="text-muted-foreground">{c.sender_name ?? c.sender} · </span>
+                {c.subject}
+              </Link>
+              <Badge variant="outline">{c.user_status === "read" ? "Read" : "Hidden"}</Badge>
+              <ItemActions id={c.id} status={c.user_status ?? "read"} />
+            </li>
+          ))}
+        </ul>
       </details>
     </section>
   );

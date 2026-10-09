@@ -6,6 +6,7 @@ import type {
   CommunicationAnalysis,
   CommunicationWithAnalysis,
   NewCommunication,
+  UserStatus,
 } from "@/types/communication";
 import type { AttentionDecision, CommunicationWithAttention } from "@/types/attention";
 
@@ -188,4 +189,15 @@ export async function saveAnalysis(
   }
 
   return data as CommunicationAnalysis;
+}
+
+export async function setCommunicationStatus(id: string, status: UserStatus): Promise<void> {
+  const { error } = await getSupabaseClient().from("communications").update({ user_status: status }).eq("id", id);
+  if (error) throw new Error(`Failed to update communication ${id}: ${error.message}`);
+}
+
+/** Removes the communication (and, via cascade, its analysis, decision, feedback and eval label) from the app. */
+export async function deleteCommunication(id: string): Promise<void> {
+  const { error } = await getSupabaseClient().from("communications").delete().eq("id", id);
+  if (error) throw new Error(`Failed to delete communication ${id}: ${error.message}`);
 }

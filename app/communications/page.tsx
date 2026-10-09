@@ -10,6 +10,9 @@ import {
 } from "@/components/ui/table";
 import { AnalyzeAllButton } from "@/components/communications/analyze-all-button";
 import { AnalyzeButton } from "@/components/communications/analyze-button";
+import { ItemActions } from "@/components/communications/item-actions";
+import { SampleToggle } from "@/components/sample-toggle";
+import { shouldShowSample } from "@/lib/sample-visibility";
 import { listCommunicationsWithAttention } from "@/lib/db/communications";
 import { isSupabaseConfigured } from "@/lib/config";
 import { LEVEL_META } from "@/lib/decision-engine/level-meta";
@@ -17,13 +20,7 @@ import { LEVEL_META } from "@/lib/decision-engine/level-meta";
 export const dynamic = "force-dynamic";
 
 const LEVEL_FILTERS = ["ACT_NOW", "REVIEW", "WATCH", "LOW_PRIORITY", "NO_ACTION"] as const;
-const SOURCE_FILTERS = [
-  { value: "all", label: "All sources" },
-  { value: "gmail", label: "Gmail" },
-  { value: "sample", label: "Sample" },
-];
-
-type Filters = { level?: string; source?: string; q?: string };
+type Filters = { level?: string; q?: string };
 
 function hrefWith(current: Filters, change: Partial<Filters>): string {
   const next = { ...current, ...change };
@@ -70,13 +67,14 @@ export default async function CommunicationsPage({
   }
 
   const unanalyzedCount = communications.filter((c) => !c.analysis).length;
-  // With real Gmail mail present, default to it; "all" brings the sample data back.
   const hasGmail = communications.some((c) => c.source === "gmail");
-  const source = filters.source === "all" ? "" : (filters.source ?? (hasGmail ? "gmail" : ""));
-  const activeSource = source || (hasGmail ? "all" : "");
+  const showSample = await shouldShowSample(hasGmail);
+  const sampleCount = communications.filter((c) => c.source === "sample").length;
   const query = filters.q?.trim().toLowerCase() ?? "";
   const visible = communications.filter((c) => {
-    if (source && c.source !== source) return false;
+    if (!showSample && c.source === "sample") return false;
+    const archived = (c.user_status ?? "unread") !== "unread";
+    if (filters.level === "ARCHIVED" ? !archived : archived) return false;
     if (filters.level === "UNANALYZED" ? Boolean(c.attention) : filters.level && c.attention?.level !== filters.level) return false;
     if (query && !`${c.subject} ${c.sender} ${c.sender_name ?? ""}`.toLowerCase().includes(query)) return false;
     return true;
@@ -97,7 +95,6 @@ export default async function CommunicationsPage({
       <div className="mb-4 space-y-3">
         <form action="/communications" className="flex gap-2">
           {filters.level && <input type="hidden" name="level" value={filters.level} />}
-          {filters.source && <input type="hidden" name="source" value={filters.source} />}
           <input
             type="search"
             name="q"
@@ -122,16 +119,14 @@ export default async function CommunicationsPage({
           <FilterChip href={hrefWith(filters, { level: "UNANALYZED" })} active={filters.level === "UNANALYZED"}>
             Not analyzed
           </FilterChip>
-          <span className="mx-1 h-4 w-px bg-border" />
-          {SOURCE_FILTERS.map((src) => (
-            <FilterChip
-              key={src.value}
-              href={hrefWith(filters, { source: src.value })}
-              active={activeSource === src.value}
-            >
-              {src.label}
-            </FilterChip>
-          ))}
+          <FilterChip href={hrefWith(filters, { level: "ARCHIVED" })} active={filters.level === "ARCHIVED"}>
+            Done &amp; hidden
+          </FilterChip>
+          {sampleCount > 0 && (
+            <span className="ml-auto">
+              <SampleToggle on={showSample} />
+            </span>
+          )}
         </div>
       </div>
 
@@ -191,7 +186,10 @@ export default async function CommunicationsPage({
                   {c.analysis ? <Badge>Analyzed</Badge> : <Badge variant="outline">Not analyzed</Badge>}
                 </TableCell>
                 <TableCell className="text-right">
-                  {!c.analysis && <AnalyzeButton communicationId={c.id} />}
+                  <div className="flex flex-col items-end gap-1">
+                    {!c.analysis && <AnalyzeButton communicationId={c.id} />}
+                    <ItemActions id={c.id} status={c.user_status ?? "unread"} />
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
