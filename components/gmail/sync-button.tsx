@@ -4,12 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
-const LIMIT_OPTIONS = [10, 20, 30, 50] as const;
-const DEFAULT_LIMIT = 20;
+import { DEFAULT_SYNC_RANGE, SYNC_RANGES, SYNC_RANGE_LABELS, type SyncRange } from "@/lib/gmail/range";
 
 export function SyncButton() {
   const router = useRouter();
-  const [limit, setLimit] = useState<number>(DEFAULT_LIMIT);
+  const [range, setRange] = useState<SyncRange>(DEFAULT_SYNC_RANGE);
   const [isRunning, setIsRunning] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
 
@@ -17,15 +16,18 @@ export function SyncButton() {
     setIsRunning(true);
     setSummary(null);
     try {
-      const res = await fetch(`/api/gmail/sync?max=${limit}`, { method: "POST" });
+      const res = await fetch(`/api/gmail/sync?range=${range}`, { method: "POST" });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
         setSummary(body.error ?? `Sync failed (HTTP ${res.status}).`);
         return;
       }
       setSummary(
-        `Fetched ${body.fetched}, imported ${body.imported} new, analyzed ${body.analyzed}` +
-          (body.failed ? `, ${body.failed} failed` : ""),
+        body.imported === 0
+          ? `${body.range}: nothing new (${body.fetched} already imported)`
+          : `${body.range}: imported ${body.imported} new, analyzed ${body.analyzed}` +
+              (body.failed ? `, ${body.failed} failed` : "") +
+              (body.truncated ? ". More are waiting, sync again to continue." : ""),
       );
       router.refresh();
     } finally {
@@ -36,19 +38,19 @@ export function SyncButton() {
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-2">
-        <label htmlFor="gmail-sync-limit" className="text-xs text-muted-foreground">
-          Emails to check
+        <label htmlFor="gmail-sync-range" className="text-xs text-muted-foreground">
+          Sync
         </label>
         <select
-          id="gmail-sync-limit"
-          value={limit}
-          onChange={(e) => setLimit(Number(e.target.value))}
+          id="gmail-sync-range"
+          value={range}
+          onChange={(e) => setRange(e.target.value as SyncRange)}
           disabled={isRunning}
           className="h-7 rounded-md border border-border bg-background px-2 text-xs"
         >
-          {LIMIT_OPTIONS.map((option) => (
+          {SYNC_RANGES.map((option) => (
             <option key={option} value={option}>
-              {option}
+              {SYNC_RANGE_LABELS[option]}
             </option>
           ))}
         </select>

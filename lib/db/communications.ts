@@ -195,3 +195,16 @@ export async function setCommunicationStatus(id: string, status: UserStatus): Pr
   const { error } = await getSupabaseClient().from("communications").update({ user_status: status }).eq("id", id);
   if (error) throw new Error(`Failed to update communication ${id}: ${error.message}`);
 }
+
+/** received_at of the newest Gmail message already imported, or null if none. */
+export async function getLatestGmailReceivedAt(): Promise<string | null> {
+  const { data, error } = await getSupabaseClient()
+    .from("communications")
+    .select("received_at")
+    .eq("source", "gmail")
+    .order("received_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`Failed to read latest Gmail message: ${error.message}`);
+  return data?.received_at ?? null;
+}

@@ -13,7 +13,7 @@ vi.mock("@/lib/db/gmail-connection", () => ({
   updateGmailAccessToken: updateGmailAccessTokenMock,
 }));
 
-import { fetchRecentMessages, getValidAccessToken, getProfileEmail } from "@/lib/gmail/client";
+import { buildMessageQuery, fetchMessages, getValidAccessToken, getProfileEmail } from "@/lib/gmail/client";
 import type { GmailConnection } from "@/types/gmail";
 
 const baseConnection: GmailConnection = {
@@ -65,7 +65,7 @@ describe("getValidAccessToken", () => {
   });
 });
 
-describe("fetchRecentMessages / getProfileEmail", () => {
+describe("fetchMessages / getProfileEmail", () => {
   const fetchMock = vi.fn();
 
   beforeEach(() => {
@@ -88,27 +88,75 @@ describe("fetchRecentMessages / getProfileEmail", () => {
     expect(init.headers.Authorization).toBe("Bearer token-1");
   });
 
+  const ok = (body: unknown) => ({ ok: true, json: async () => body });
+  const query = "after:100 -in:sent";
+
   it("lists message ids then fetches each message in full", async () => {
     fetchMock
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ messages: [{ id: "m1" }, { id: "m2" }] }) })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "m1", snippet: "first" }) })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "m2", snippet: "second" }) });
+      .mockResolvedValueOnce(ok({ messages: [{ id: "m1" }, { id: "m2" }] }))
+      .mockResolvedValueOnce(ok({ id: "m1", snippet: "first" }))
+      .mockResolvedValueOnce(ok({ id: "m2", snippet: "second" }));
 
-    const messages = await fetchRecentMessages("token-1", 2);
+    const { messages, truncated } = await fetchMessages("token-1", { query, maxResults: 10 });
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
-    expect(fetchMock.mock.calls[0][0]).toContain("maxResults=2");
+    expect(new URL(fetchMock.mock.calls[0][0]).searchParams.get("q")).toBe(query);
     expect(messages.map((m) => m.id)).toEqual(["m1", "m2"]);
+    expect(truncated).toBe(false);
   });
 
-  it("returns an empty array when there are no messages", async () => {
-    fetchMock.mockResolvedValue({ ok: true, json: async () => ({}) });
-    const messages = await fetchRecentMessages("token-1");
-    expect(messages).toEqual([]);
+  it("follows pagination until there is no next page", async () => {
+    fetchMock
+      .mockResolvedValueOnce(ok({ messages: [{ id: "m1" }], nextPageToken: "p2" }))
+      .mockResolvedValueOnce(ok({ messages: [{ id: "m2" }] }))
+      .mockResolvedValue(ok({ id: "x" }));
+
+    const { messages } = await fetchMessages("token-1", { query, maxResults: 10 });
+
+    expect(fetchMock.mock.calls[1][0]).toContain("pageToken=p2");
+    expect(messages).toHaveLength(2);
+  });
+
+  it("keeps the newest messages by default when over the cap, and reports truncation", async () => {
+    fetchMock
+      .mockResolvedValueOnce(ok({ messages: [{ id: "new" }, { id: "mid" }, { id: "old" }] }))
+      .mockImplementation(async (url: string) => ok({ id: url.split("/messages/")[1].split("?")[0] }));
+
+    const { messages, truncated } = await fetchMessages("token-1", { query, maxResults: 2 });
+
+    expect(truncated).toBe(true);
+    expect(messages.map((m) => m.id)).toEqual(["new", "mid"]);
+  });
+
+  it("keeps the oldest messages with keep: oldest, so an incremental sync can resume", async () => {
+    fetchMock
+      .mockResolvedValueOnce(ok({ messages: [{ id: "new" }, { id: "mid" }, { id: "old" }] }))
+      .mockImplementation(async (url: string) => ok({ id: url.split("/messages/")[1].split("?")[0] }));
+
+    const { messages } = await fetchMessages("token-1", { query, maxResults: 2, keep: "oldest" });
+
+    expect(messages.map((m) => m.id)).toEqual(["mid", "old"]);
+  });
+
+  it("returns an empty result when there are no messages", async () => {
+    fetchMock.mockResolvedValue(ok({}));
+    const result = await fetchMessages("token-1", { query, maxResults: 10 });
+    expect(result).toEqual({ messages: [], truncated: false });
   });
 
   it("throws with the status and body when a Gmail API call fails", async () => {
     fetchMock.mockResolvedValue({ ok: false, status: 401, text: async () => "invalid_token" });
     await expect(getProfileEmail("bad-token")).rejects.toThrow(/401/);
+  });
+});
+
+describe("buildMessageQuery", () => {
+  it("builds epoch-second bounds and excludes sent mail and drafts", () => {
+    const q = buildMessageQuery({ after: new Date(1_000_000_000_000), before: new Date(1_000_086_400_000) });
+    expect(q).toBe("after:1000000000 before:1000086400 -in:sent -in:drafts");
+  });
+
+  it("omits before when the window is open-ended", () => {
+    expect(buildMessageQuery({ after: new Date(5_000), before: null })).toBe("after:5 -in:sent -in:drafts");
   });
 });

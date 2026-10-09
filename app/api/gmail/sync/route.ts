@@ -1,13 +1,20 @@
 import { NextResponse } from "next/server";
 import { getActiveGmailConnection } from "@/lib/db/gmail-connection";
-import { fetchRecentMessages, getValidAccessToken } from "@/lib/gmail/client";
+import { buildMessageQuery, fetchMessages, getValidAccessToken } from "@/lib/gmail/client";
 import { normalizeGmailMessage } from "@/lib/gmail/normalize";
-import { upsertExternalCommunications } from "@/lib/db/communications";
+import {
+  DEFAULT_SYNC_RANGE,
+  SYNC_RANGE_LABELS,
+  isSyncRange,
+  resolveSyncWindow,
+} from "@/lib/gmail/range";
+import { getLatestGmailReceivedAt, upsertExternalCommunications } from "@/lib/db/communications";
 import { listPersonalContext } from "@/lib/db/personal-context";
 import { processCommunication } from "@/lib/pipeline/process-communication";
 
-const DEFAULT_MAX = 20;
-const HARD_CAP = 50;
+/** Every imported message costs AI calls, so one sync is capped. */
+const MAX_PER_SYNC = 100;
+const ANALYZE_BATCH_SIZE = 5;
 
 export async function POST(request: Request) {
   const connection = await getActiveGmailConnection();
@@ -16,9 +23,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Gmail is not connected." }, { status: 400 });
   }
 
-  const { searchParams } = new URL(request.url);
-  const requested = Number(searchParams.get("max") ?? DEFAULT_MAX);
-  const maxResults = Math.min(Number.isFinite(requested) && requested > 0 ? requested : DEFAULT_MAX, HARD_CAP);
+  const requestedRange = new URL(request.url).searchParams.get("range");
+  const range = isSyncRange(requestedRange) ? requestedRange : DEFAULT_SYNC_RANGE;
+  const window = resolveSyncWindow(range, new Date(), await getLatestGmailReceivedAt());
 
   let accessToken: string;
   try {
@@ -37,7 +44,14 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ error: "Could not refresh Gmail access." }, { status: 502 });
   }
-  const messages = await fetchRecentMessages(accessToken, maxResults);
+
+  const { messages, truncated } = await fetchMessages(accessToken, {
+    query: buildMessageQuery(window),
+    maxResults: MAX_PER_SYNC,
+    // Incremental sync resumes from the newest imported message, so keep the oldest ones
+    // when over the cap and the next sync carries on from there.
+    keep: range === "since_last" ? "oldest" : "newest",
+  });
   const normalized = messages.map(normalizeGmailMessage) as (ReturnType<
     typeof normalizeGmailMessage
   > & { external_id: string })[];
@@ -49,16 +63,22 @@ export async function POST(request: Request) {
 
   let analyzed = 0;
   let failed = 0;
-  for (const communication of imported) {
-    const result = await processCommunication(communication, personalContext);
-    if (result.status === "success") analyzed += 1;
-    else failed += 1;
+  for (let i = 0; i < imported.length; i += ANALYZE_BATCH_SIZE) {
+    const results = await Promise.all(
+      imported.slice(i, i + ANALYZE_BATCH_SIZE).map((c) => processCommunication(c, personalContext)),
+    );
+    for (const result of results) {
+      if (result.status === "success") analyzed += 1;
+      else failed += 1;
+    }
   }
 
   return NextResponse.json({
+    range: SYNC_RANGE_LABELS[range],
     fetched: messages.length,
     imported: imported.length,
     analyzed,
     failed,
+    truncated,
   });
 }

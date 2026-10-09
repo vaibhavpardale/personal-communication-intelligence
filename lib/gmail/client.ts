@@ -59,23 +59,71 @@ export async function getProfileEmail(accessToken: string): Promise<string> {
 }
 
 /**
- * Fetches the most recent messages. Sequential per-message `get` calls, capped
- * by `maxResults` — a deliberately simple sync strategy (no pagination across
- * runs, no label filtering) appropriate for a personal capstone.
+ * Gmail search for a time window. Gmail's `after:`/`before:` take epoch seconds.
+ * Sent mail and drafts are excluded: they are not things that need attention.
  */
-export async function fetchRecentMessages(
-  accessToken: string,
-  maxResults = 20,
-): Promise<GmailApiMessage[]> {
-  const list = (await gmailFetch(accessToken, `/messages?maxResults=${maxResults}`)) as {
-    messages?: { id: string }[];
-  };
-  const ids = list.messages ?? [];
+export function buildMessageQuery(window: { after: Date; before: Date | null }): string {
+  const parts = [`after:${Math.floor(window.after.getTime() / 1000)}`];
+  if (window.before) parts.push(`before:${Math.floor(window.before.getTime() / 1000)}`);
+  parts.push("-in:sent", "-in:drafts");
+  return parts.join(" ");
+}
 
-  const messages: GmailApiMessage[] = [];
-  for (const { id } of ids) {
-    const message = (await gmailFetch(accessToken, `/messages/${id}?format=full`)) as GmailApiMessage;
-    messages.push(message);
-  }
-  return messages;
+/** Listing ids is cheap, so look at up to this many matches before applying the import cap. */
+const LIST_LIMIT = 500;
+const FETCH_CONCURRENCY = 8;
+
+async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, async () => {
+      while (next < items.length) {
+        const index = next++;
+        results[index] = await fn(items[index]);
+      }
+    }),
+  );
+  return results;
+}
+
+export interface FetchMessagesResult {
+  messages: GmailApiMessage[];
+  /** True when more messages matched than `maxResults`, so the rest were left for a later sync. */
+  truncated: boolean;
+}
+
+/**
+ * Fetches messages matching a Gmail search query, following pagination.
+ * Gmail lists newest first. `keep: "newest"` imports the newest `maxResults`;
+ * `keep: "oldest"` imports the oldest, so an incremental sync that resumes from
+ * the newest imported message never skips the ones left behind.
+ */
+export async function fetchMessages(
+  accessToken: string,
+  { query, maxResults, keep = "newest" }: { query: string; maxResults: number; keep?: "newest" | "oldest" },
+): Promise<FetchMessagesResult> {
+  const ids: string[] = [];
+  let pageToken: string | undefined;
+
+  do {
+    const params = new URLSearchParams({ q: query, maxResults: String(Math.min(100, LIST_LIMIT - ids.length)) });
+    if (pageToken) params.set("pageToken", pageToken);
+    const page = (await gmailFetch(accessToken, `/messages?${params}`)) as {
+      messages?: { id: string }[];
+      nextPageToken?: string;
+    };
+    ids.push(...(page.messages ?? []).map((m) => m.id));
+    pageToken = page.nextPageToken;
+  } while (pageToken && ids.length < LIST_LIMIT);
+
+  const truncated = ids.length > maxResults;
+  const chosen = truncated ? (keep === "oldest" ? ids.slice(-maxResults) : ids.slice(0, maxResults)) : ids;
+
+  const messages = await mapWithConcurrency(
+    chosen,
+    FETCH_CONCURRENCY,
+    (id) => gmailFetch(accessToken, `/messages/${id}?format=full`) as Promise<GmailApiMessage>,
+  );
+  return { messages, truncated };
 }
