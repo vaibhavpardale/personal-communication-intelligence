@@ -11,6 +11,8 @@ import { getActiveGmailConnection } from "@/lib/db/gmail-connection";
 import { LEVEL_META } from "@/lib/decision-engine/level-meta";
 import type { AttentionLevel } from "@/lib/decision-engine/types";
 import { getGmailLabel } from "@/lib/db/evaluation";
+import { listSenderPreferences } from "@/lib/db/sender-preferences";
+import { senderAddress } from "@/lib/decision-engine/preferences";
 import { shouldShowSample } from "@/lib/sample-visibility";
 import { formatRelative } from "@/lib/utils";
 import type { CommunicationWithAttention } from "@/types/attention";
@@ -93,6 +95,7 @@ export default async function Home({
   const selected = explicitItem ?? list[0];
   const selectedIndex = selected ? list.indexOf(selected) : -1;
   const neighbour = selectedIndex >= 0 ? (list[selectedIndex + 1] ?? list[selectedIndex - 1]) : undefined;
+  const senderPreferences = await listSenderPreferences();
   const evalLabel = selected && selected.source !== "sample" ? await getGmailLabel(selected.id) : null;
   const nextHref = neighbour ? hrefFor(neighbour.id) : tab === "attention" ? "/" : `/?tab=${tab}`;
 
@@ -193,7 +196,12 @@ export default async function Home({
               >
                 ← Back to list
               </Link>
-              <DetailPanel communication={selected} afterActionHref={nextHref} evalLabel={evalLabel} />
+              <DetailPanel
+                communication={selected}
+                afterActionHref={nextHref}
+                evalLabel={evalLabel}
+                senderPreference={senderPreferences[senderAddress(selected.sender)] ?? null}
+              />
             </div>
           ) : (
             <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">

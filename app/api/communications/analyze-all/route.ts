@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
 import { listCommunicationsWithAnalysis } from "@/lib/db/communications";
 import { listPersonalContext } from "@/lib/db/personal-context";
+import { listSenderPreferences } from "@/lib/db/sender-preferences";
 import { processCommunication } from "@/lib/pipeline/process-communication";
 
 const BATCH_SIZE = 5;
 
 export async function POST() {
-  const [communications, personalContext] = await Promise.all([
+  const [communications, personalContext, senderPreferences] = await Promise.all([
     listCommunicationsWithAnalysis(),
     listPersonalContext(),
+    listSenderPreferences(),
   ]);
   const pending = communications.filter((c) => !c.analysis);
 
@@ -19,7 +21,7 @@ export async function POST() {
   for (let i = 0; i < pending.length; i += BATCH_SIZE) {
     const batch = pending.slice(i, i + BATCH_SIZE);
     const results = await Promise.all(
-      batch.map((c) => processCommunication(c, personalContext)),
+      batch.map((c) => processCommunication(c, personalContext, senderPreferences)),
     );
 
     results.forEach((result, index) => {

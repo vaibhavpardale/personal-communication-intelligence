@@ -10,6 +10,7 @@ import {
 } from "@/lib/gmail/range";
 import { getLatestGmailReceivedAt, upsertExternalCommunications } from "@/lib/db/communications";
 import { listPersonalContext } from "@/lib/db/personal-context";
+import { listSenderPreferences } from "@/lib/db/sender-preferences";
 import { processCommunication } from "@/lib/pipeline/process-communication";
 
 /** Every imported message costs AI calls, so one sync is capped. */
@@ -60,12 +61,13 @@ export async function POST(request: Request) {
   // data — Gmail gets no separate AI pipeline.
   const imported = await upsertExternalCommunications(normalized);
   const personalContext = await listPersonalContext();
+  const senderPreferences = await listSenderPreferences();
 
   let analyzed = 0;
   let failed = 0;
   for (let i = 0; i < imported.length; i += ANALYZE_BATCH_SIZE) {
     const results = await Promise.all(
-      imported.slice(i, i + ANALYZE_BATCH_SIZE).map((c) => processCommunication(c, personalContext)),
+      imported.slice(i, i + ANALYZE_BATCH_SIZE).map((c) => processCommunication(c, personalContext, senderPreferences)),
     );
     for (const result of results) {
       if (result.status === "success") analyzed += 1;

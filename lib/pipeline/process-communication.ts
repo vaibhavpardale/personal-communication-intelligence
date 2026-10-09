@@ -3,7 +3,7 @@ import { generateExplanation } from "@/lib/ai/generate-explanation";
 import { saveAnalysis } from "@/lib/db/communications";
 import { saveAttentionDecision, type DecisionExplanation } from "@/lib/db/attention";
 import { buildDecisionInput } from "@/lib/decision-engine/build-input";
-import { decideAttention } from "@/lib/decision-engine/decide";
+import { decideWithPreferences, type SenderPreferenceMap } from "@/lib/decision-engine/preferences";
 import { logError, logInfo } from "@/lib/observability/logger";
 import type { Communication, CommunicationAnalysis } from "@/types/communication";
 import type { AttentionDecision } from "@/types/attention";
@@ -30,14 +30,16 @@ type ProcessableCommunication = Pick<
 export async function processCommunication(
   communication: ProcessableCommunication,
   personalContext: PersonalContextEntry[] = [],
+  senderPreferences: SenderPreferenceMap = {},
 ): Promise<ProcessCommunicationResult> {
   try {
     const { analysis, model, promptVersion } = await analyzeCommunication(communication);
     const savedAnalysis = await saveAnalysis(communication.id, analysis, model, promptVersion);
 
-    const decision = decideAttention(
+    const decision = decideWithPreferences(
       buildDecisionInput(communication, savedAnalysis),
       personalContext,
+      senderPreferences,
     );
 
     let explanation: DecisionExplanation | null = null;

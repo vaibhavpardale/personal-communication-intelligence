@@ -32,3 +32,14 @@ export async function listFeedbackForCommunication(
 
   return (data ?? []) as UserFeedback[];
 }
+
+/** All feedback, grouped by communication, for learning which senders the user cares about. */
+export async function listFeedbackByCommunication(): Promise<Map<string, UserFeedback["feedback_type"][]>> {
+  const { data, error } = await getSupabaseClient().from("user_feedback").select("communication_id, feedback_type");
+  if (error) throw new Error(`Failed to list feedback: ${error.message}`);
+  const map = new Map<string, UserFeedback["feedback_type"][]>();
+  for (const row of data ?? []) {
+    map.set(row.communication_id, [...(map.get(row.communication_id) ?? []), row.feedback_type]);
+  }
+  return map;
+}

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DetailPanel } from "@/components/communications/detail-panel";
 import { getGmailLabel } from "@/lib/db/evaluation";
+import { listSenderPreferences } from "@/lib/db/sender-preferences";
+import { senderAddress } from "@/lib/decision-engine/preferences";
 import { getCommunicationWithAttention } from "@/lib/db/communications";
 import { isSupabaseConfigured } from "@/lib/config";
 
@@ -42,6 +44,7 @@ export default async function CommunicationDetailPage({
       <DetailPanel
         communication={communication}
         evalLabel={communication.source !== "sample" ? await getGmailLabel(communication.id) : null}
+        senderPreference={(await listSenderPreferences())[senderAddress(communication.sender)] ?? null}
       />
     </main>
   );

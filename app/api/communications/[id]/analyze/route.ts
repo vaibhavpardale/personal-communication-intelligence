@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCommunicationWithAnalysis } from "@/lib/db/communications";
 import { listPersonalContext } from "@/lib/db/personal-context";
+import { listSenderPreferences } from "@/lib/db/sender-preferences";
 import { processCommunication } from "@/lib/pipeline/process-communication";
 
 export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -13,7 +14,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   }
 
   const personalContext = await listPersonalContext();
-  const result = await processCommunication(communication, personalContext);
+  const result = await processCommunication(communication, personalContext, await listSenderPreferences());
 
   if (result.status === "error") {
     return NextResponse.json({ error: result.error }, { status: 502 });

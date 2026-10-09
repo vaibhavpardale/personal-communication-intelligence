@@ -2,6 +2,8 @@ import { Badge } from "@/components/ui/badge";
 import { AnalyzeButton } from "@/components/communications/analyze-button";
 import { FeedbackButtons } from "@/components/communications/feedback-buttons";
 import { ItemActions } from "@/components/communications/item-actions";
+import { SenderControl } from "@/components/communications/sender-control";
+import type { SenderPreference } from "@/lib/decision-engine/preferences";
 import { LabelControl } from "@/components/communications/label-control";
 import { LEVEL_META } from "@/lib/decision-engine/level-meta";
 import type { AttentionLevel, DecisionFactorScores } from "@/lib/decision-engine/types";
@@ -12,10 +14,13 @@ export function DetailPanel({
   communication,
   afterActionHref,
   evalLabel = null,
+  senderPreference = null,
 }: {
   communication: CommunicationWithAttention;
   /** The user's expected level for the real-inbox evaluation, if already set. */
   evalLabel?: AttentionLevel | null;
+  /** How the user has told Heed to treat this sender, if at all. */
+  senderPreference?: SenderPreference | null;
   /** Where to go once the item is marked done or hidden (the feed passes the next item). */
   afterActionHref?: string;
 }) {
@@ -123,6 +128,8 @@ export function DetailPanel({
           </div>
         </details>
       )}
+
+      <SenderControl sender={communication.sender} preference={senderPreference} />
 
       {attention && communication.source !== "sample" && (
         <LabelControl id={communication.id} engineLevel={attention.level} label={evalLabel} />

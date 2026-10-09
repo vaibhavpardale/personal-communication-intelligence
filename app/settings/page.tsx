@@ -1,6 +1,11 @@
 import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SenderPreferencesPanel } from "@/components/settings/sender-preferences-panel";
+import { listFeedbackByCommunication } from "@/lib/db/feedback";
+import { listCommunicationsWithAttention } from "@/lib/db/communications";
+import { listSenderPreferences } from "@/lib/db/sender-preferences";
+import { suggestPreferences } from "@/lib/learning";
 import { NotificationSettings } from "@/components/notifications/notification-settings";
 import { SyncButton } from "@/components/gmail/sync-button";
 import { DisconnectButton } from "@/components/gmail/disconnect-button";
@@ -50,6 +55,8 @@ export default async function SettingsPage({
         </CardContent>
       </Card>
 
+      {isSupabaseConfigured() && <SendersCard />}
+
       <Card id="notifications" className="scroll-mt-20">
         <CardHeader>
           <CardTitle>Notifications</CardTitle>
@@ -59,6 +66,37 @@ export default async function SettingsPage({
         </CardContent>
       </Card>
     </main>
+  );
+}
+
+async function SendersCard() {
+  const [preferences, communications, feedback] = await Promise.all([
+    listSenderPreferences(),
+    listCommunicationsWithAttention(),
+    listFeedbackByCommunication(),
+  ]);
+  const suggestions = suggestPreferences(
+    communications
+      .filter((c) => c.source !== "sample")
+      .map((c) => ({
+        sender: c.sender,
+        senderName: c.sender_name,
+        status: c.user_status ?? "unread",
+        level: c.attention?.level ?? null,
+        feedback: feedback.get(c.id) ?? [],
+      })),
+    preferences,
+  );
+
+  return (
+    <Card id="senders" className="scroll-mt-20">
+      <CardHeader>
+        <CardTitle>Senders</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <SenderPreferencesPanel preferences={preferences} suggestions={suggestions} />
+      </CardContent>
+    </Card>
   );
 }
 
