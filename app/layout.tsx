@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Personal Communication Intelligence",
-  description: "What needs my attention?",
+  title: "Heed: what needs your attention",
+  description: "Heed reads your mail and tells you what needs you, by when, and why.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

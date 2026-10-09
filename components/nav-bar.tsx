@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Wordmark } from "@/components/brand/logo";
 import { cn } from "cn";
 
 const LINKS = [
@@ -16,11 +17,11 @@ export function NavBar() {
 
   return (
     <header className="sticky top-0 z-10 border-b bg-background/90 backdrop-blur">
-      <nav className="mx-auto flex max-w-5xl items-center gap-4 px-8 py-3 text-sm">
-        <Link href="/" className="font-semibold">
-          Personal Communication Intelligence
+      <nav className="mx-auto flex max-w-6xl items-center gap-4 px-6 py-3 text-sm">
+        <Link href="/" aria-label="Heed home">
+          <Wordmark />
         </Link>
-        <div className="ml-auto flex gap-1">
+        <div className="ml-auto flex items-center gap-1">
           {LINKS.map((link) => {
             const active = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
             return (
@@ -31,8 +32,8 @@ export function NavBar() {
                 className={cn(
                   "rounded-md px-3 py-1.5 transition-colors",
                   active
-                    ? "bg-muted font-medium text-foreground"
-                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                    ? "bg-accent font-medium text-accent-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
                 {link.label}

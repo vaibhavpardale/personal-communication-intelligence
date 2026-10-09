@@ -137,7 +137,7 @@ export default async function Home({
               href={t.key === "attention" ? "/" : `/?tab=${t.key}`}
               aria-current={active ? "page" : undefined}
               className={`inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors ${
-                active ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"
+                active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
               }`}
             >
               {t.key in LEVEL_META && (

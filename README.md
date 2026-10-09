@@ -1,4 +1,6 @@
-# Personal Communication Intelligence
+# Heed
+
+*Personal Communication Intelligence.* Heed reads your mail and tells you what needs you, by when, and why.
 
 A personal AI system that sits over digital communications and answers one question:
 
