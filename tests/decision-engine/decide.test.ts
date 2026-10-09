@@ -139,6 +139,13 @@ describe("decideAttention", () => {
     expect(tomorrow.scores.deadline_proximity).toBeGreaterThan(soon.scores.deadline_proximity);
   });
 
+  it("does not treat a past event date as deadline pressure", () => {
+    const past = decideAttention(baseInput({ event_date: daysFromNow(-3) }), [], NOW);
+    const today = decideAttention(baseInput({ event_date: daysFromNow(0) }), [], NOW);
+    expect(past.scores.deadline_proximity).toBe(0);
+    expect(today.scores.deadline_proximity).toBe(5);
+  });
+
   it("treats an overdue deadline with the same urgency as due-tomorrow", () => {
     const overdue = decideAttention(baseInput({ deadline: daysFromNow(-3) }), [], NOW);
     expect(overdue.scores.deadline_proximity).toBe(5);

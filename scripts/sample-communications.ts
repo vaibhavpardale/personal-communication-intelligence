@@ -3,11 +3,15 @@ import type { NewCommunication } from "@/types/communication";
 /**
  * Synthetic sample data for Phase 1-3 development and evaluation.
  *
- * Dates are anchored to a fixed reference date (rather than `Date.now()`)
- * so re-seeding the database does not shift the content of the golden
- * evaluation dataset built in Phase 3. The anchor is 2026-09-20.
+ * Dates are anchored to 09:00 UTC on the day of seeding. The golden labels
+ * are defined relative to this anchor ("due tomorrow", "arrived yesterday"),
+ * and the decision engine scores deadlines against the real current time, so
+ * a fixed calendar anchor would silently turn every sample into "overdue" as
+ * real time passes. Re-seed (delete the sample rows, run `npm run seed`) to
+ * re-anchor before running an evaluation.
  */
-const ANCHOR = new Date("2026-09-20T09:00:00Z");
+const ANCHOR = new Date();
+ANCHOR.setUTCHours(9, 0, 0, 0);
 
 function iso(offsetDays: number, hour = 9): string {
   const d = new Date(ANCHOR);

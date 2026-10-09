@@ -64,11 +64,17 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 export function scoreDeadlineProximity(input: DecisionEngineInput, now: Date): number {
   const dateStr = input.deadline ?? input.event_date;
   if (!dateStr) return 0;
+  const isDeadline = Boolean(input.deadline);
 
   const target = new Date(dateStr);
   if (Number.isNaN(target.getTime())) return 0;
 
   const diffDays = (target.getTime() - now.getTime()) / MS_PER_DAY;
+
+  // A deadline in the past is overdue (urgent). An event date in the past is
+  // just something that already happened (a debit, a sign-in) — not pressure.
+  // One day of grace keeps "today" events, which parse as midnight, urgent.
+  if (!isDeadline && diffDays < -1) return 0;
 
   if (diffDays <= 1) return 5; // overdue, due today, or due tomorrow
   if (diffDays <= 3) return 4;
