@@ -81,3 +81,41 @@ export async function insertEvaluationDataset(
 
   return data as EvaluationDatasetEntry[];
 }
+
+export async function getGmailLabel(communicationId: string): Promise<AttentionLevel | null> {
+  const { data, error } = await getSupabaseClient()
+    .from("evaluation_dataset")
+    .select("expected_attention_level")
+    .eq("communication_id", communicationId)
+    .eq("dataset", "gmail")
+    .maybeSingle();
+  if (error) throw new Error(`Failed to read label: ${error.message}`);
+  return (data?.expected_attention_level as AttentionLevel | undefined) ?? null;
+}
+
+/** Records the human-decided correct level for a real-inbox message (attention level only). */
+export async function saveGmailLabel(communicationId: string, level: AttentionLevel): Promise<void> {
+  const { error } = await getSupabaseClient()
+    .from("evaluation_dataset")
+    .upsert(
+      {
+        communication_id: communicationId,
+        expected_category: null,
+        expected_intent: null,
+        expected_attention_level: level,
+        dataset_split: "dev",
+        dataset: "gmail",
+      },
+      { onConflict: "communication_id" },
+    );
+  if (error) throw new Error(`Failed to save label: ${error.message}`);
+}
+
+export async function clearGmailLabel(communicationId: string): Promise<void> {
+  const { error } = await getSupabaseClient()
+    .from("evaluation_dataset")
+    .delete()
+    .eq("communication_id", communicationId)
+    .eq("dataset", "gmail");
+  if (error) throw new Error(`Failed to remove label: ${error.message}`);
+}

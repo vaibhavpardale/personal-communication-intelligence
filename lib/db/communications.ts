@@ -208,3 +208,12 @@ export async function getLatestGmailReceivedAt(): Promise<string | null> {
   if (error) throw new Error(`Failed to read latest Gmail message: ${error.message}`);
   return data?.received_at ?? null;
 }
+
+export async function countGmailCommunications(): Promise<number> {
+  const { count, error } = await getSupabaseClient()
+    .from("communications")
+    .select("*", { count: "exact", head: true })
+    .eq("source", "gmail");
+  if (error) throw new Error(`Failed to count Gmail messages: ${error.message}`);
+  return count ?? 0;
+}

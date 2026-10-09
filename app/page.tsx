@@ -10,6 +10,7 @@ import { listCommunicationsWithAttention } from "@/lib/db/communications";
 import { getActiveGmailConnection } from "@/lib/db/gmail-connection";
 import { LEVEL_META } from "@/lib/decision-engine/level-meta";
 import type { AttentionLevel } from "@/lib/decision-engine/types";
+import { getGmailLabel } from "@/lib/db/evaluation";
 import { shouldShowSample } from "@/lib/sample-visibility";
 import { formatRelative } from "@/lib/utils";
 import type { CommunicationWithAttention } from "@/types/attention";
@@ -92,6 +93,7 @@ export default async function Home({
   const selected = explicitItem ?? list[0];
   const selectedIndex = selected ? list.indexOf(selected) : -1;
   const neighbour = selectedIndex >= 0 ? (list[selectedIndex + 1] ?? list[selectedIndex - 1]) : undefined;
+  const evalLabel = selected && selected.source !== "sample" ? await getGmailLabel(selected.id) : null;
   const nextHref = neighbour ? hrefFor(neighbour.id) : tab === "attention" ? "/" : `/?tab=${tab}`;
 
   const tabs: { key: Tab; label: string; count: number }[] = [
@@ -191,7 +193,7 @@ export default async function Home({
               >
                 ← Back to list
               </Link>
-              <DetailPanel communication={selected} afterActionHref={nextHref} />
+              <DetailPanel communication={selected} afterActionHref={nextHref} evalLabel={evalLabel} />
             </div>
           ) : (
             <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">

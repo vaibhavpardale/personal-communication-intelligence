@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { listEvaluationExamples, type EvaluationExampleRow } from "@/lib/db/evaluation";
 import { isSupabaseConfigured } from "@/lib/config";
+import { countGmailCommunications } from "@/lib/db/communications";
 import { ATTENTION_LEVELS } from "@/lib/decision-engine/types";
 import { summarizeEvaluation } from "@/lib/evaluation/metrics";
 
@@ -42,11 +43,13 @@ export default async function EvaluationPage() {
     );
   }
 
+  const gmailTotal = await countGmailCommunications();
+  const gmailLabeled = examples.filter((e) => e.dataset === "gmail").length;
   const sections = [
     {
       key: "gmail",
       title: "Real Gmail (hand-reviewed labels)",
-      note: "Labels cover attention level only, so category and intent accuracy do not apply.",
+      note: `${gmailLabeled} of ${gmailTotal} Gmail emails labeled. Open an email and use "Rate this decision" to add more. Labels cover attention level only, so category and intent accuracy do not apply.`,
     },
     {
       key: "golden",
@@ -60,7 +63,18 @@ export default async function EvaluationPage() {
       <h1 className="text-2xl font-semibold">Evaluation</h1>
       {sections.map((section) => {
         const rows = examples.filter((e) => e.dataset === section.key);
-        if (rows.length === 0) return null;
+        if (rows.length === 0) {
+          if (section.key !== "gmail" || gmailTotal === 0) return null;
+          return (
+            <section key={section.key} className="rounded-lg border border-dashed p-6 text-sm">
+              <h2 className="text-xl font-semibold">{section.title}</h2>
+              <p className="mt-2 text-muted-foreground">
+                0 of {gmailTotal} Gmail emails labeled. Open an email and use &ldquo;Rate this decision&rdquo; to
+                tell the evaluation what the attention level should have been.
+              </p>
+            </section>
+          );
+        }
         return <EvaluationSection key={section.key} title={section.title} note={section.note} examples={rows} />;
       })}
     </main>

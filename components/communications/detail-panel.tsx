@@ -2,16 +2,20 @@ import { Badge } from "@/components/ui/badge";
 import { AnalyzeButton } from "@/components/communications/analyze-button";
 import { FeedbackButtons } from "@/components/communications/feedback-buttons";
 import { ItemActions } from "@/components/communications/item-actions";
+import { LabelControl } from "@/components/communications/label-control";
 import { LEVEL_META } from "@/lib/decision-engine/level-meta";
-import type { DecisionFactorScores } from "@/lib/decision-engine/types";
+import type { AttentionLevel, DecisionFactorScores } from "@/lib/decision-engine/types";
 import type { CommunicationWithAttention } from "@/types/attention";
 
 /** Everything about one communication: the answer first, the evidence folded below. */
 export function DetailPanel({
   communication,
   afterActionHref,
+  evalLabel = null,
 }: {
   communication: CommunicationWithAttention;
+  /** The user's expected level for the real-inbox evaluation, if already set. */
+  evalLabel?: AttentionLevel | null;
   /** Where to go once the item is marked done or hidden (the feed passes the next item). */
   afterActionHref?: string;
 }) {
@@ -118,6 +122,10 @@ export function DetailPanel({
             <Row label="Model" value={`${analysis.model} · ${analysis.prompt_version}`} />
           </div>
         </details>
+      )}
+
+      {attention && communication.source !== "sample" && (
+        <LabelControl id={communication.id} engineLevel={attention.level} label={evalLabel} />
       )}
 
       <div>

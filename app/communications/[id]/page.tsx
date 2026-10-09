@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DetailPanel } from "@/components/communications/detail-panel";
+import { getGmailLabel } from "@/lib/db/evaluation";
 import { getCommunicationWithAttention } from "@/lib/db/communications";
 import { isSupabaseConfigured } from "@/lib/config";
 
@@ -38,7 +39,10 @@ export default async function CommunicationDetailPage({
       <Link href="/communications" className="text-sm text-muted-foreground hover:underline">
         ← All communications
       </Link>
-      <DetailPanel communication={communication} />
+      <DetailPanel
+        communication={communication}
+        evalLabel={communication.source !== "sample" ? await getGmailLabel(communication.id) : null}
+      />
     </main>
   );
 }
