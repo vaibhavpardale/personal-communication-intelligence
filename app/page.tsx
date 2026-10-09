@@ -3,8 +3,11 @@ import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AnalyzeAllButton } from "@/components/communications/analyze-all-button";
+import { SyncButton } from "@/components/gmail/sync-button";
+import { getActiveGmailConnection } from "@/lib/db/gmail-connection";
+import { formatRelative } from "@/lib/utils";
 import { listCommunicationsWithAttention } from "@/lib/db/communications";
-import { isSupabaseConfigured } from "@/lib/config";
+import { isGmailConfigured, isSupabaseConfigured } from "@/lib/config";
 import { LEVEL_META } from "@/lib/decision-engine/level-meta";
 import type { AttentionLevel } from "@/lib/decision-engine/types";
 import type { CommunicationWithAttention } from "@/types/attention";
@@ -24,8 +27,10 @@ export default async function Home() {
   }
 
   let communications: CommunicationWithAttention[];
+  let gmailConnected = false;
   try {
     communications = await listCommunicationsWithAttention();
+    gmailConnected = isGmailConfigured() && Boolean(await getActiveGmailConnection());
   } catch (error) {
     return (
       <EmptyShell
@@ -63,16 +68,46 @@ export default async function Home() {
     (byLevel.get("NO_ACTION")?.length ?? 0) +
     unanalyzed.length;
 
+  const everythingElse = communications.filter(
+    (c) => !c.attention || c.attention.level === "LOW_PRIORITY" || c.attention.level === "NO_ACTION",
+  );
+
   return (
     <main className="mx-auto max-w-3xl space-y-8 p-8">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">What needs my attention?</h1>
-          <p className="mt-1 text-muted-foreground">
-            {needsAttentionCount} thing{needsAttentionCount === 1 ? "" : "s"} need action or review
-          </p>
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold">What needs my attention?</h1>
+            <p className="mt-1 text-muted-foreground">
+              {needsAttentionCount} thing{needsAttentionCount === 1 ? "" : "s"} need action or review
+              out of {communications.length}
+            </p>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            {gmailConnected && <SyncButton />}
+            {unanalyzed.length > 0 && <AnalyzeAllButton />}
+          </div>
         </div>
-        {unanalyzed.length > 0 && <AnalyzeAllButton />}
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {NEEDS_ATTENTION_LEVELS.map((level) => (
+            <a
+              key={level}
+              href={`#${level}`}
+              className={`rounded-lg border p-3 transition-shadow hover:shadow-sm ${LEVEL_META[level].tint}`}
+            >
+              <div className="text-2xl font-semibold">{byLevel.get(level)?.length ?? 0}</div>
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <span className={`size-2 rounded-full ${LEVEL_META[level].dot}`} />
+                {LEVEL_META[level].label}
+              </div>
+            </a>
+          ))}
+          <a href="#everything-else" className="rounded-lg border p-3 transition-shadow hover:shadow-sm">
+            <div className="text-2xl font-semibold">{everythingElseCount}</div>
+            <div className="text-sm text-muted-foreground">Everything else</div>
+          </a>
+        </div>
       </div>
 
       {NEEDS_ATTENTION_LEVELS.map((level) => {
@@ -81,7 +116,7 @@ export default async function Home() {
         return <LevelSection key={level} level={level} items={items} />;
       })}
 
-      <EverythingElseSection count={everythingElseCount} />
+      <EverythingElseSection items={everythingElse} />
     </main>
   );
 }
@@ -95,26 +130,38 @@ function LevelSection({
 }) {
   const meta = LEVEL_META[level];
   return (
-    <section>
+    <section id={level} className="scroll-mt-20">
       <div className="mb-3 flex items-center gap-2">
-        <Badge variant={meta.badgeVariant}>{meta.label.toUpperCase()}</Badge>
+        <span className={`size-2.5 rounded-full ${meta.dot}`} />
+        <h2 className="font-semibold">{meta.label}</h2>
         <span className="text-sm text-muted-foreground">
-          {items.length} item{items.length === 1 ? "" : "s"}
+          {items.length} item{items.length === 1 ? "" : "s"} · {meta.description}
         </span>
       </div>
-      <div className="space-y-2">
+      <div className="space-y-3">
         {items.map((c) => (
           <Link
             key={c.id}
             href={`/communications/${c.id}`}
-            className="block rounded-md border p-3 transition-colors hover:bg-muted"
+            className={`block rounded-lg border p-4 transition-shadow hover:shadow-md ${meta.tint}`}
           >
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-medium">{c.subject}</span>
+            <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+              <span className="truncate">
+                {c.sender_name ?? c.sender} · {formatRelative(c.received_at)}
+              </span>
               {c.analysis && <Badge variant="outline">{c.analysis.category}</Badge>}
             </div>
+            <div className="mt-1 font-medium">{c.subject}</div>
             {c.attention && (
-              <p className="mt-1 text-sm text-muted-foreground">{c.attention.reason}</p>
+              <div className="mt-2 space-y-1 text-sm">
+                <p className="text-foreground/80">{c.attention.why_it_matters ?? c.attention.reason}</p>
+                {c.attention.what_you_can_do && (
+                  <p className="text-muted-foreground">
+                    <span className="font-medium text-foreground">Next: </span>
+                    {c.attention.what_you_can_do}
+                  </p>
+                )}
+              </div>
             )}
           </Link>
         ))}
@@ -123,13 +170,37 @@ function LevelSection({
   );
 }
 
-function EverythingElseSection({ count }: { count: number }) {
-  if (count === 0) return null;
+function EverythingElseSection({ items }: { items: CommunicationWithAttention[] }) {
+  if (items.length === 0) return null;
   return (
-    <section className="border-t pt-6">
-      <Link href="/communications" className="text-sm text-muted-foreground hover:underline">
-        Everything else · {count} communication{count === 1 ? "" : "s"} →
-      </Link>
+    <section id="everything-else" className="scroll-mt-20 border-t pt-6">
+      <details>
+        <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
+          Everything else · {items.length} communication{items.length === 1 ? "" : "s"} (low priority,
+          noise, or not yet analyzed)
+        </summary>
+        <ul className="mt-3 divide-y rounded-lg border text-sm">
+          {items.map((c) => (
+            <li key={c.id}>
+              <Link
+                href={`/communications/${c.id}`}
+                className="flex items-center justify-between gap-3 px-3 py-2 hover:bg-muted"
+              >
+                <span className="truncate">
+                  <span className="text-muted-foreground">{c.sender_name ?? c.sender} · </span>
+                  {c.subject}
+                </span>
+                <Badge variant="outline" className="shrink-0">
+                  {c.attention ? LEVEL_META[c.attention.level].label : "Not analyzed"}
+                </Badge>
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <Link href="/communications" className="mt-3 inline-block text-sm text-muted-foreground hover:underline">
+          Open full list with filters →
+        </Link>
+      </details>
     </section>
   );
 }

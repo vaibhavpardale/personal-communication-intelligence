@@ -16,7 +16,29 @@ import { LEVEL_META } from "@/lib/decision-engine/level-meta";
 
 export const dynamic = "force-dynamic";
 
-export default async function CommunicationsPage() {
+const LEVEL_FILTERS = ["ACT_NOW", "REVIEW", "WATCH", "LOW_PRIORITY", "NO_ACTION"] as const;
+const SOURCE_FILTERS = [
+  { value: "", label: "All sources" },
+  { value: "gmail", label: "Gmail" },
+  { value: "sample", label: "Sample" },
+];
+
+type Filters = { level?: string; source?: string; q?: string };
+
+function hrefWith(current: Filters, change: Partial<Filters>): string {
+  const next = { ...current, ...change };
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(next)) if (value) params.set(key, value);
+  const qs = params.toString();
+  return qs ? `/communications?${qs}` : "/communications";
+}
+
+export default async function CommunicationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Filters>;
+}) {
+  const filters = await searchParams;
   if (!isSupabaseConfigured()) {
     return (
       <EmptyState
@@ -48,6 +70,13 @@ export default async function CommunicationsPage() {
   }
 
   const unanalyzedCount = communications.filter((c) => !c.analysis).length;
+  const query = filters.q?.trim().toLowerCase() ?? "";
+  const visible = communications.filter((c) => {
+    if (filters.source && c.source !== filters.source) return false;
+    if (filters.level === "UNANALYZED" ? Boolean(c.attention) : filters.level && c.attention?.level !== filters.level) return false;
+    if (query && !`${c.subject} ${c.sender} ${c.sender_name ?? ""}`.toLowerCase().includes(query)) return false;
+    return true;
+  });
 
   return (
     <main className="mx-auto max-w-5xl p-8">
@@ -55,11 +84,58 @@ export default async function CommunicationsPage() {
         <div>
           <h1 className="text-2xl font-semibold">Communications</h1>
           <p className="text-sm text-muted-foreground">
-            {communications.length} communications · {unanalyzedCount} awaiting analysis
+            Showing {visible.length} of {communications.length} · {unanalyzedCount} awaiting analysis
           </p>
         </div>
         <AnalyzeAllButton />
       </div>
+
+      <div className="mb-4 space-y-3">
+        <form action="/communications" className="flex gap-2">
+          {filters.level && <input type="hidden" name="level" value={filters.level} />}
+          {filters.source && <input type="hidden" name="source" value={filters.source} />}
+          <input
+            type="search"
+            name="q"
+            defaultValue={filters.q ?? ""}
+            placeholder="Search sender or subject"
+            className="h-8 w-full max-w-sm rounded-lg border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          />
+          <button type="submit" className="h-8 rounded-lg border px-3 text-sm hover:bg-muted">
+            Search
+          </button>
+        </form>
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <FilterChip href={hrefWith(filters, { level: "" })} active={!filters.level}>
+            All levels
+          </FilterChip>
+          {LEVEL_FILTERS.map((level) => (
+            <FilterChip key={level} href={hrefWith(filters, { level })} active={filters.level === level}>
+              <span className={`mr-1.5 inline-block size-2 rounded-full ${LEVEL_META[level].dot}`} />
+              {LEVEL_META[level].label}
+            </FilterChip>
+          ))}
+          <FilterChip href={hrefWith(filters, { level: "UNANALYZED" })} active={filters.level === "UNANALYZED"}>
+            Not analyzed
+          </FilterChip>
+          <span className="mx-1 h-4 w-px bg-border" />
+          {SOURCE_FILTERS.map((src) => (
+            <FilterChip
+              key={src.value}
+              href={hrefWith(filters, { source: src.value })}
+              active={(filters.source ?? "") === src.value}
+            >
+              {src.label}
+            </FilterChip>
+          ))}
+        </div>
+      </div>
+
+      {visible.length === 0 && (
+        <p className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+          Nothing matches these filters. <Link href="/communications" className="underline">Clear filters</Link>
+        </p>
+      )}
 
       <div className="rounded-md border">
         <Table>
@@ -75,7 +151,7 @@ export default async function CommunicationsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {communications.map((c) => (
+            {visible.map((c) => (
               <TableRow key={c.id}>
                 <TableCell>
                   <Link href={`/communications/${c.id}`} className="hover:underline">
@@ -119,6 +195,28 @@ export default async function CommunicationsPage() {
         </Table>
       </div>
     </main>
+  );
+}
+
+function FilterChip({
+  href,
+  active,
+  children,
+}: {
+  href: string;
+  active: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "true" : undefined}
+      className={`inline-flex items-center rounded-full border px-3 py-1 text-xs transition-colors ${
+        active ? "border-foreground bg-foreground text-background" : "text-muted-foreground hover:bg-muted"
+      }`}
+    >
+      {children}
+    </Link>
   );
 }
 
