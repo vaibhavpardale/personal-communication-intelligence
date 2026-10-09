@@ -1,6 +1,8 @@
 # Heed
 
-*Personal Communication Intelligence.* Heed reads your mail and tells you what needs you, by when, and why.
+**Only what needs you.** Notification intelligence for your inbox. Heed reads your mail and tells you what needs you, by when, and why.
+
+Heed is a responsive web app that installs on a phone (Add to Home Screen) and uses a phone layout automatically. The Phone toggle in the header previews that layout on a desktop.
 
 A personal AI system that sits over digital communications and answers one question:
 

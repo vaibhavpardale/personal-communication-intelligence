@@ -1,22 +1,30 @@
-/** The Heed mark: one dot (the thing that matters) with two waves converging on it. Same artwork as app/icon.svg. */
+export const TAGLINE = "Only what needs you.";
+export const DESCRIPTOR = "Notification intelligence for your inbox.";
+
+/** The Heed mark: a lowercase "h" with a notification-badge dot. Same artwork as app/icon.svg. */
 export function LogoMark({ size = 28, className }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" role="img" aria-label="Heed" className={className}>
-      <rect width="32" height="32" rx="8" fill="var(--primary)" />
-      <g transform="translate(-1.2 0)" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round">
-        <circle cx="20.5" cy="16" r="3.4" fill="#fff" stroke="none" />
-        <path d="M14.77 11.98a7 7 0 0 0 0 8.04" />
-        <path d="M11.49 9.69a11 11 0 0 0 0 12.62" strokeOpacity=".6" />
-      </g>
+      <rect width="32" height="32" rx="9" fill="var(--primary)" />
+      <path
+        d="M8.4 7.5v17M8.4 15.5c0-3.6 2.4-6 6.1-6s6.1 2.4 6.1 6v9"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="4.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="24.2" cy="8.8" r="3" fill="#fbbf24" />
     </svg>
   );
 }
 
-export function Wordmark() {
+export function Wordmark({ withTagline = false }: { withTagline?: boolean }) {
   return (
     <span className="flex items-center gap-2">
       <LogoMark />
       <span className="text-lg font-semibold tracking-tight">Heed</span>
+      {withTagline && <span className="ml-1 hidden border-l pl-3 text-xs text-muted-foreground lg:inline">{TAGLINE}</span>}
     </span>
   );
 }

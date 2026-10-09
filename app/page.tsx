@@ -131,7 +131,7 @@ export default async function Home({
         </div>
       </header>
 
-      <nav className="-mx-1 flex flex-wrap gap-1 border-b pb-2" aria-label="Attention views">
+      <nav className="-mx-1 flex gap-1 overflow-x-auto border-b pb-2 sm:flex-wrap sm:overflow-visible" aria-label="Attention views">
         {tabs.map((t) => {
           const active = t.key === tab;
           return (
@@ -139,7 +139,7 @@ export default async function Home({
               key={t.key}
               href={t.key === "attention" ? "/" : `/?tab=${t.key}`}
               aria-current={active ? "page" : undefined}
-              className={`inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors ${
+              className={`inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-md px-3 py-1.5 text-sm transition-colors ${
                 active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
               }`}
             >
