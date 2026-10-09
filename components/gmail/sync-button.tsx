@@ -18,9 +18,9 @@ export function SyncButton() {
     setSummary(null);
     try {
       const res = await fetch(`/api/gmail/sync?max=${limit}`, { method: "POST" });
-      const body = await res.json();
+      const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setSummary(body.error ?? "Sync failed.");
+        setSummary(body.error ?? `Sync failed (HTTP ${res.status}).`);
         return;
       }
       setSummary(

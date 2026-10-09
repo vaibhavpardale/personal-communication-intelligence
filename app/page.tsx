@@ -40,7 +40,7 @@ export default async function Home() {
       <EmptyShell
         title="No communications yet"
         message="Run `npm run seed` to load sample data, then analyze it from the Communications page."
-        action={<Button render={<Link href="/communications">Go to Communications</Link>} />}
+        action={<Button nativeButton={false} render={<Link href="/communications">Go to Communications</Link>} />}
       />
     );
   }

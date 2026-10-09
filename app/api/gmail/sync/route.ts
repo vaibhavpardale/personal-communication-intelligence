@@ -20,7 +20,23 @@ export async function POST(request: Request) {
   const requested = Number(searchParams.get("max") ?? DEFAULT_MAX);
   const maxResults = Math.min(Number.isFinite(requested) && requested > 0 ? requested : DEFAULT_MAX, HARD_CAP);
 
-  const accessToken = await getValidAccessToken(connection);
+  let accessToken: string;
+  try {
+    accessToken = await getValidAccessToken(connection);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Gmail token refresh failed:", message);
+    if (message.includes("invalid_grant")) {
+      return NextResponse.json(
+        {
+          error:
+            "Google rejected the saved Gmail authorization (expired or revoked). Go to Settings and reconnect Gmail.",
+        },
+        { status: 401 },
+      );
+    }
+    return NextResponse.json({ error: "Could not refresh Gmail access." }, { status: 502 });
+  }
   const messages = await fetchRecentMessages(accessToken, maxResults);
   const normalized = messages.map(normalizeGmailMessage) as (ReturnType<
     typeof normalizeGmailMessage

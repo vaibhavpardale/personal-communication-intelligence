@@ -82,6 +82,12 @@ async function GmailPanel() {
       </div>
       <div className="flex flex-wrap gap-2">
         <SyncButton />
+        <a
+          href="/api/gmail/auth"
+          className="inline-flex h-7 items-center rounded-lg border border-border bg-background px-2.5 text-[0.8rem] font-medium hover:bg-muted"
+        >
+          Reconnect Gmail
+        </a>
         <DisconnectButton />
         <DeleteDataButton />
       </div>
