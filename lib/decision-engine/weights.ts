@@ -1,6 +1,6 @@
 import type { AttentionLevel, DecisionFactorScores } from "@/lib/decision-engine/types";
 
-export const DECISION_VERSION = "decision-engine-v1";
+export const DECISION_VERSION = "decision-engine-v2";
 
 /** Kept configurable and out of any component so tuning never means touching UI code. */
 export const FACTOR_WEIGHTS: Record<keyof DecisionFactorScores, number> = {

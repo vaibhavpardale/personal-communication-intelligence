@@ -139,6 +139,15 @@ describe("decideAttention", () => {
     expect(tomorrow.scores.deadline_proximity).toBeGreaterThan(soon.scores.deadline_proximity);
   });
 
+  it("does not count a promotion's call to action as a required action", () => {
+    const promo = decideAttention(
+      baseInput({ category: "MARKETING", intent: "PROMOTION", requested_action: "Order now" }),
+      [],
+      NOW,
+    );
+    expect(promo.scores.action_required).toBe(0);
+  });
+
   it("does not treat a past event date as deadline pressure", () => {
     const past = decideAttention(baseInput({ event_date: daysFromNow(-3) }), [], NOW);
     const today = decideAttention(baseInput({ event_date: daysFromNow(0) }), [], NOW);

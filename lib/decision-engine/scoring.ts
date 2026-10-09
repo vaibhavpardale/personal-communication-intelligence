@@ -27,6 +27,9 @@ export function scoreUrgency(input: DecisionEngineInput): number {
 export function scoreActionRequired(input: DecisionEngineInput): number {
   const hasRequestedAction = Boolean(input.requested_action && input.requested_action.trim().length > 0);
   if (!hasRequestedAction) return 0;
+  // A promotion's call to action ("Order now", "Register") is the sender's ask,
+  // not an obligation on the user.
+  if (input.intent === "PROMOTION") return 0;
   return input.intent === "ACTION_REQUIRED" ? 5 : 3;
 }
 
