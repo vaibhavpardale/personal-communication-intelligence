@@ -13,15 +13,16 @@ Goal: a clean recording of under three minutes. Everything below is repeatable.
    senders. No emails, analyses or evaluation labels are deleted.
 4. **Reconnect Gmail** the same day (Settings → Reconnect Gmail). In Testing mode the token expires after 7 days.
    Sync "Since last sync" shortly before you record so the newest mail is in.
-5. **Keep real mail off screen**: turn **Sample data** ON so only the synthetic emails show on the attention list and
-   the brief. Do not open Communications or Evaluation lists that contain your own mail.
+5. **Keep real mail off screen**: set the header menu **Showing** to **Samples only (demo)**. It hides every real
+   message on the feed, the brief, the Communications list and the bell. (The older "Sample data" switch showed
+   samples *and* your mail.) Do not open the Evaluation page: its examples list contains labeled real emails.
 6. Browser: a clean window around 1440 x 900, zoom 110%, bookmarks bar hidden, other notifications muted.
 
 ## The flow (about 75 seconds for this app)
 
 | Time | Do | Say (short) |
 |---|---|---|
-| 0:00 | Attention screen, Sample data on | "Same engine on my own Gmail, read-only." |
+| 0:00 | Attention screen, Showing: Samples only (demo) | "Same engine on my own Gmail, read-only." |
 | 0:08 | Sync dropdown → "Yesterday" → Sync now (or just show it, already synced) | "Sync by date. Since last sync is the default." |
 | 0:18 | Open the first Act Now item | "It says why it matters and what to do." |
 | 0:28 | Click **Done** | "Done clears it and opens the next one." |

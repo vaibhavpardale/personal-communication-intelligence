@@ -5,7 +5,7 @@ import { isSupabaseConfigured } from "@/lib/config";
 import { listCommunicationsWithAttention } from "@/lib/db/communications";
 import { briefToText, buildBrief, type BriefItem } from "@/lib/brief";
 import { LEVEL_META } from "@/lib/decision-engine/level-meta";
-import { shouldShowSample } from "@/lib/sample-visibility";
+import { applyDataView, getDataView } from "@/lib/sample-visibility";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +30,7 @@ export default async function BriefPage() {
 
   const all = await listCommunicationsWithAttention();
   const hasGmail = all.some((c) => c.source === "gmail");
-  const communications = (await shouldShowSample(hasGmail)) ? all : all.filter((c) => c.source !== "sample");
+  const communications = applyDataView(all, await getDataView(hasGmail));
 
   const now = new Date();
   const brief = buildBrief(communications, now);

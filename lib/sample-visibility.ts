@@ -1,10 +1,11 @@
 import { cookies } from "next/headers";
+import { applyDataView, resolveView, VIEW_COOKIE, type DataView } from "@/lib/data-view";
 import { SAMPLE_COOKIE } from "@/lib/sample-cookie";
 
-/** Explicit choice (cookie) wins; otherwise show samples only while there is no real Gmail mail. */
-export async function shouldShowSample(hasGmail: boolean): Promise<boolean> {
-  const value = (await cookies()).get(SAMPLE_COOKIE)?.value;
-  if (value === "1") return true;
-  if (value === "0") return false;
-  return !hasGmail;
+export { applyDataView };
+
+/** The data view for this request, from the user's saved choice. */
+export async function getDataView(hasRealMail: boolean): Promise<DataView> {
+  const jar = await cookies();
+  return resolveView(jar.get(VIEW_COOKIE)?.value, jar.get(SAMPLE_COOKIE)?.value, hasRealMail);
 }

@@ -11,8 +11,8 @@ import {
 import { AnalyzeAllButton } from "@/components/communications/analyze-all-button";
 import { AnalyzeButton } from "@/components/communications/analyze-button";
 import { ItemActions } from "@/components/communications/item-actions";
-import { SampleToggle } from "@/components/sample-toggle";
-import { shouldShowSample } from "@/lib/sample-visibility";
+import { DataViewSwitch } from "@/components/data-view-switch";
+import { applyDataView, getDataView } from "@/lib/sample-visibility";
 import { listCommunicationsWithAttention } from "@/lib/db/communications";
 import { isSupabaseConfigured } from "@/lib/config";
 import { LEVEL_META } from "@/lib/decision-engine/level-meta";
@@ -68,11 +68,11 @@ export default async function CommunicationsPage({
 
   const unanalyzedCount = communications.filter((c) => !c.analysis).length;
   const hasGmail = communications.some((c) => c.source === "gmail");
-  const showSample = await shouldShowSample(hasGmail);
+  const view = await getDataView(hasGmail);
   const sampleCount = communications.filter((c) => c.source === "sample").length;
   const query = filters.q?.trim().toLowerCase() ?? "";
   const visible = communications.filter((c) => {
-    if (!showSample && c.source === "sample") return false;
+    if (applyDataView([c], view).length === 0) return false;
     if (query && !`${c.subject} ${c.sender} ${c.sender_name ?? ""}`.toLowerCase().includes(query)) return false;
 
     // Done and Hidden are their own views; every other view shows unread items only.
@@ -132,7 +132,7 @@ export default async function CommunicationsPage({
           </FilterChip>
           {sampleCount > 0 && (
             <span className="ml-auto">
-              <SampleToggle on={showSample} />
+              <DataViewSwitch view={view} />
             </span>
           )}
         </div>

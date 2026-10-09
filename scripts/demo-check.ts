@@ -91,7 +91,7 @@ async function main() {
       const ageDays = (Date.now() - new Date(newest.received_at).getTime()) / 86_400_000;
       expect(ageDays <= 2, "Gmail mail is recent", "warn", `newest Gmail message is ${Math.round(ageDays)} days old`, "sync 'Since last sync' just before recording");
     }
-    report("warn", "real emails exist in this database", "turn Sample data ON, or only show screens that list sample mail");
+    report("warn", "real emails exist in this database", "set Showing to Samples only (demo) before recording");
   }
 
   console.log(`\nRunning app (${APP_URL})`);

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { listCommunicationsWithAttention } from "@/lib/db/communications";
 import { listSenderPreferences } from "@/lib/db/sender-preferences";
+import { applyDataView, getDataView } from "@/lib/sample-visibility";
 import { senderAddress } from "@/lib/decision-engine/preferences";
 import type { Candidate } from "@/lib/notifications/prefs";
 
@@ -10,11 +11,11 @@ import type { Candidate } from "@/lib/notifications/prefs";
  */
 export async function GET() {
   const [all, preferences] = await Promise.all([listCommunicationsWithAttention(), listSenderPreferences()]);
-  // Notifications are about your real mail; sample data only counts when there is nothing else.
-  const hasGmail = all.some((c) => c.source === "gmail");
+  // The bell follows the same data view as the pages, so a "samples only" demo never shows real mail here.
+  const view = await getDataView(all.some((c) => c.source === "gmail"));
 
-  const candidates: Candidate[] = all
-    .filter((c) => (!hasGmail || c.source !== "sample") && (c.user_status ?? "unread") === "unread" && c.attention)
+  const candidates: Candidate[] = applyDataView(all, view)
+    .filter((c) => (c.user_status ?? "unread") === "unread" && c.attention)
     .filter((c) => ["ACT_NOW", "REVIEW", "WATCH"].includes(c.attention!.level))
     // A muted sender never notifies, whatever the message says.
     .filter((c) => preferences[senderAddress(c.sender)] !== "muted")

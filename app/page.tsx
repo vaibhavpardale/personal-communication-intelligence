@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { AnalyzeAllButton } from "@/components/communications/analyze-all-button";
 import { DetailPanel } from "@/components/communications/detail-panel";
 import { SyncButton } from "@/components/gmail/sync-button";
-import { SampleToggle } from "@/components/sample-toggle";
+import { DataViewSwitch } from "@/components/data-view-switch";
 import { isGmailConfigured, isSupabaseConfigured } from "@/lib/config";
 import { listCommunicationsWithAttention } from "@/lib/db/communications";
 import { getActiveGmailConnection } from "@/lib/db/gmail-connection";
@@ -13,7 +13,7 @@ import type { AttentionLevel } from "@/lib/decision-engine/types";
 import { getGmailLabel } from "@/lib/db/evaluation";
 import { listSenderPreferences } from "@/lib/db/sender-preferences";
 import { senderAddress } from "@/lib/decision-engine/preferences";
-import { shouldShowSample } from "@/lib/sample-visibility";
+import { applyDataView, getDataView } from "@/lib/sample-visibility";
 import { formatRelative } from "@/lib/utils";
 import type { CommunicationWithAttention } from "@/types/attention";
 
@@ -69,9 +69,9 @@ export default async function Home({
 
   // Sample (golden-set) data is hidden by default once real Gmail mail exists; the switch overrides.
   const hasGmail = all.some((c) => c.source === "gmail");
-  const showSample = await shouldShowSample(hasGmail);
+  const view = await getDataView(hasGmail);
   const sampleCount = all.filter((c) => c.source === "sample").length;
-  const visible = showSample ? all : all.filter((c) => c.source !== "sample");
+  const visible = applyDataView(all, view);
 
   const unread = visible.filter(isUnread);
   const done = visible.filter((c) => c.user_status === "read");
@@ -125,7 +125,7 @@ export default async function Home({
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">
-          {sampleCount > 0 && <SampleToggle on={showSample} />}
+          {sampleCount > 0 && <DataViewSwitch view={view} />}
           {gmailConnected && <SyncButton />}
           {unanalyzedCount > 0 && <AnalyzeAllButton />}
         </div>
