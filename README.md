@@ -1,4 +1,4 @@
-# Attention Filter (working title)
+# Signals Intelligence (SIGINT), working title
 
 **Only what needs you.** Notification intelligence for your inbox. It reads your mail and tells you what needs you, by when, and why.
 

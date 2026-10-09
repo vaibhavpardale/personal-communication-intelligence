@@ -49,39 +49,40 @@
 }
 
 :root {
-  /* Calm teal on white, deep green-black ink. */
+  /* Neutral on purpose: white, light gray and near-black, with one blue for things you can act on.
+     Colour is reserved for urgency (red, orange), so whatever has colour is what needs you. */
   --background: #ffffff;
-  --foreground: #0d1f1d;
+  --foreground: #1d1d1f;
   --card: #ffffff;
-  --card-foreground: #0d1f1d;
+  --card-foreground: #1d1d1f;
   --popover: #ffffff;
-  --popover-foreground: #0d1f1d;
-  --primary: #0f766e;
+  --popover-foreground: #1d1d1f;
+  --primary: #0071e3;
   --primary-foreground: #ffffff;
-  --secondary: #f1f6f5;
-  --secondary-foreground: #0d1f1d;
-  --muted: #f1f6f5;
-  --muted-foreground: #5b6b69;
-  --accent: #e3f2ef;
-  --accent-foreground: #0b4f4a;
-  --destructive: #d92d20;
-  --border: #dbe5e3;
-  --input: #cbd8d6;
-  --ring: #0f766e;
-  --chart-1: #0f766e;
-  --chart-2: #2a9d8f;
-  --chart-3: #e9a23b;
-  --chart-4: #d9534f;
-  --chart-5: #0d1f1d;
+  --secondary: #f5f5f7;
+  --secondary-foreground: #1d1d1f;
+  --muted: #f5f5f7;
+  --muted-foreground: #6e6e73;
+  --accent: #e8f1fc;
+  --accent-foreground: #0058b0;
+  --destructive: #ff3b30;
+  --border: #e3e3e8;
+  --input: #d2d2d7;
+  --ring: #0071e3;
+  --chart-1: #0071e3;
+  --chart-2: #5ac8fa;
+  --chart-3: #ff9500;
+  --chart-4: #ff3b30;
+  --chart-5: #1d1d1f;
   --radius: 0.875rem;
-  --sidebar: #f6faf9;
-  --sidebar-foreground: #0d1f1d;
-  --sidebar-primary: #0f766e;
+  --sidebar: #f5f5f7;
+  --sidebar-foreground: #1d1d1f;
+  --sidebar-primary: #0071e3;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e3f2ef;
-  --sidebar-accent-foreground: #0b4f4a;
-  --sidebar-border: #dbe5e3;
-  --sidebar-ring: #0f766e;
+  --sidebar-accent: #e8f1fc;
+  --sidebar-accent-foreground: #0058b0;
+  --sidebar-border: #e3e3e8;
+  --sidebar-ring: #0071e3;
 }
 
 .dark {

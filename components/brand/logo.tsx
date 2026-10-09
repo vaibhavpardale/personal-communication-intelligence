@@ -7,13 +7,13 @@ export const DESCRIPTOR = BRAND.descriptor;
 export function LogoMark({ size = 28, className }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" role="img" aria-label={BRAND.name} className={className}>
-      <rect width="32" height="32" rx="9" fill="var(--primary)" />
+      <rect width="32" height="32" rx="9" fill="#1d1d1f" />
       <g stroke="#fff" strokeWidth="3.2" strokeLinecap="round">
         <path d="M7.5 8.5h17" />
-        <path d="M10.5 14.5h11" strokeOpacity=".75" />
-        <path d="M13.5 20.5h5" strokeOpacity=".55" />
+        <path d="M10.5 14.5h11" strokeOpacity=".7" />
+        <path d="M13.5 20.5h5" strokeOpacity=".45" />
       </g>
-      <circle cx="16" cy="26" r="2.6" fill="#fbbf24" />
+      <circle cx="16" cy="26" r="2.6" fill="#ff9f0a" />
     </svg>
   );
 }

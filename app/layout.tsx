@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0f766e",
+  themeColor: "#ffffff",
   width: "device-width",
   initialScale: 1,
   // lets the page use the whole screen on notched phones; the nav bars pad for the safe areas
