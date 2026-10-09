@@ -16,7 +16,12 @@ export const dynamic = "force-dynamic";
 
 const NEEDS_ATTENTION_LEVELS: AttentionLevel[] = ["ACT_NOW", "REVIEW", "WATCH"];
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ sample?: string }>;
+}) {
+  const { sample } = await searchParams;
   if (!isSupabaseConfigured()) {
     return (
       <EmptyShell
@@ -50,6 +55,12 @@ export default async function Home() {
     );
   }
 
+  // Once real Gmail mail exists, show only that by default; sample data stays one click away.
+  const hasGmail = communications.some((c) => c.source === "gmail");
+  const showSample = sample === "1" || !hasGmail;
+  const sampleCount = communications.filter((c) => c.source === "sample").length;
+  if (!showSample) communications = communications.filter((c) => c.source === "gmail");
+
   const unanalyzed = communications.filter((c) => !c.attention);
   const byLevel = new Map<AttentionLevel, CommunicationWithAttention[]>();
   for (const c of communications) {
@@ -81,6 +92,16 @@ export default async function Home() {
             <p className="mt-1 text-muted-foreground">
               {needsAttentionCount} thing{needsAttentionCount === 1 ? "" : "s"} need action or review
               out of {communications.length}
+              {hasGmail && sampleCount > 0 && (
+                <>
+                  {" · "}
+                  {showSample ? "all data" : "Gmail only"}
+                  {" · "}
+                  <Link href={showSample ? "/" : "/?sample=1"} className="underline hover:text-foreground">
+                    {showSample ? "Hide sample data" : `Show sample data (${sampleCount})`}
+                  </Link>
+                </>
+              )}
             </p>
           </div>
           <div className="flex flex-col items-end gap-2">

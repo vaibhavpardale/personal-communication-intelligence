@@ -44,16 +44,17 @@ export default async function EvaluationPage() {
 
   const sections = [
     {
-      key: "golden",
-      title: "Golden set (synthetic samples)",
-      note: "Frozen, hand-labeled sample communications.",
-    },
-    {
       key: "gmail",
       title: "Real Gmail (hand-reviewed labels)",
       note: "Labels cover attention level only, so category and intent accuracy do not apply.",
     },
+    {
+      key: "golden",
+      title: "Golden set (synthetic samples)",
+      note: "Frozen, hand-labeled sample communications.",
+    },
   ] as const;
+  const hasGmailLabels = examples.some((e) => e.dataset === "gmail");
 
   return (
     <main className="mx-auto max-w-4xl space-y-10 p-8">
@@ -61,7 +62,21 @@ export default async function EvaluationPage() {
       {sections.map((section) => {
         const rows = examples.filter((e) => e.dataset === section.key);
         if (rows.length === 0) return null;
-        return <EvaluationSection key={section.key} title={section.title} note={section.note} examples={rows} />;
+        const content = (
+          <EvaluationSection key={section.key} title={section.title} note={section.note} examples={rows} />
+        );
+        // Real-inbox results lead; the golden set stays available but folded away.
+        if (section.key === "golden" && hasGmailLabels) {
+          return (
+            <details key={section.key}>
+              <summary className="mb-6 cursor-pointer text-sm text-muted-foreground hover:text-foreground">
+                Show golden set results (synthetic samples, {rows.length} examples)
+              </summary>
+              {content}
+            </details>
+          );
+        }
+        return content;
       })}
     </main>
   );

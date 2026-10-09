@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 
 const LEVEL_FILTERS = ["ACT_NOW", "REVIEW", "WATCH", "LOW_PRIORITY", "NO_ACTION"] as const;
 const SOURCE_FILTERS = [
-  { value: "", label: "All sources" },
+  { value: "all", label: "All sources" },
   { value: "gmail", label: "Gmail" },
   { value: "sample", label: "Sample" },
 ];
@@ -70,9 +70,13 @@ export default async function CommunicationsPage({
   }
 
   const unanalyzedCount = communications.filter((c) => !c.analysis).length;
+  // With real Gmail mail present, default to it; "all" brings the sample data back.
+  const hasGmail = communications.some((c) => c.source === "gmail");
+  const source = filters.source === "all" ? "" : (filters.source ?? (hasGmail ? "gmail" : ""));
+  const activeSource = source || (hasGmail ? "all" : "");
   const query = filters.q?.trim().toLowerCase() ?? "";
   const visible = communications.filter((c) => {
-    if (filters.source && c.source !== filters.source) return false;
+    if (source && c.source !== source) return false;
     if (filters.level === "UNANALYZED" ? Boolean(c.attention) : filters.level && c.attention?.level !== filters.level) return false;
     if (query && !`${c.subject} ${c.sender} ${c.sender_name ?? ""}`.toLowerCase().includes(query)) return false;
     return true;
@@ -123,7 +127,7 @@ export default async function CommunicationsPage({
             <FilterChip
               key={src.value}
               href={hrefWith(filters, { source: src.value })}
-              active={(filters.source ?? "") === src.value}
+              active={activeSource === src.value}
             >
               {src.label}
             </FilterChip>
