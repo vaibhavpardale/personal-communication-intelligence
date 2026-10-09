@@ -106,7 +106,7 @@ export default async function Home({
       label: LEVEL_META[level].label,
       count: byLevel(level).length,
     })),
-    { key: "low", label: "Low priority & noise", count: lowAndNoise.length },
+    { key: "low", label: "Low priority", count: lowAndNoise.length },
     { key: "done", label: "Done", count: done.length },
     { key: "hidden", label: "Hidden", count: hidden.length },
   ];
