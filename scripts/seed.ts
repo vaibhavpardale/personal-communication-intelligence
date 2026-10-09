@@ -16,41 +16,38 @@ type SupabaseClient = ReturnType<typeof getSupabaseClient>;
 async function seedCommunications(
   supabase: SupabaseClient,
 ): Promise<{ id: string; subject: string }[]> {
-  const { count, error: countError } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from("communications")
-    .select("*", { count: "exact", head: true })
+    .select("id, subject")
     .eq("source", "sample");
 
-  if (countError) {
-    console.error(`Failed to check existing communications: ${countError.message}`);
+  if (existingError) {
+    console.error(`Failed to load existing sample communications: ${existingError.message}`);
     process.exit(1);
   }
 
-  if ((count ?? 0) > 0) {
+  // Insert only the samples that are missing, so a partial deletion is repaired
+  // instead of being skipped (and re-running never creates duplicates).
+  const have = new Set((existing ?? []).map((row) => row.subject));
+  const missing = sampleCommunications.filter((c) => !have.has(c.subject));
+
+  if (missing.length === 0) {
     console.log(
-      `communications table already has ${count} sample row(s); skipping insert (will still ` +
+      `All ${existing?.length ?? 0} sample communications already exist; skipping insert (will still ` +
         `seed/update personal context and the evaluation dataset).`,
     );
-    const { data, error } = await supabase.from("communications").select("id, subject").eq("source", "sample");
-    if (error) {
-      console.error(`Failed to load existing communications: ${error.message}`);
-      process.exit(1);
-    }
-    return data ?? [];
+    return existing ?? [];
   }
 
-  const { data, error } = await supabase
-    .from("communications")
-    .insert(sampleCommunications)
-    .select("id, subject");
+  const { data, error } = await supabase.from("communications").insert(missing).select("id, subject");
 
   if (error) {
     console.error(`Failed to seed communications: ${error.message}`);
     process.exit(1);
   }
 
-  console.log(`Seeded ${data?.length ?? 0} sample communications.`);
-  return data ?? [];
+  console.log(`Seeded ${data?.length ?? 0} missing sample communication(s).`);
+  return [...(existing ?? []), ...(data ?? [])];
 }
 
 async function seedPersonalContext(supabase: SupabaseClient) {

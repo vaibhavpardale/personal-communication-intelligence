@@ -195,9 +195,3 @@ export async function setCommunicationStatus(id: string, status: UserStatus): Pr
   const { error } = await getSupabaseClient().from("communications").update({ user_status: status }).eq("id", id);
   if (error) throw new Error(`Failed to update communication ${id}: ${error.message}`);
 }
-
-/** Removes the communication (and, via cascade, its analysis, decision, feedback and eval label) from the app. */
-export async function deleteCommunication(id: string): Promise<void> {
-  const { error } = await getSupabaseClient().from("communications").delete().eq("id", id);
-  if (error) throw new Error(`Failed to delete communication ${id}: ${error.message}`);
-}

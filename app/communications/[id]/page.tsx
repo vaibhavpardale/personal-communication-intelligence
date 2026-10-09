@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AnalyzeButton } from "@/components/communications/analyze-button";
+import { ItemActions } from "@/components/communications/item-actions";
 import { FeedbackButtons } from "@/components/communications/feedback-buttons";
 import { getCommunicationWithAttention } from "@/lib/db/communications";
 import { isSupabaseConfigured } from "@/lib/config";
@@ -46,7 +47,10 @@ export default async function CommunicationDetailPage({
         <Link href="/communications" className="text-sm text-muted-foreground hover:underline">
           ← All communications
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold">{communication.subject}</h1>
+        <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
+          <h1 className="text-2xl font-semibold">{communication.subject}</h1>
+          <ItemActions id={communication.id} status={communication.user_status ?? "unread"} />
+        </div>
       </div>
 
       <Card>
