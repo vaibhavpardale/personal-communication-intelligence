@@ -112,7 +112,7 @@ export default async function Home({
   ];
 
   return (
-    <main className="mx-auto max-w-6xl space-y-6 p-6 sm:p-8">
+    <main className="mx-auto w-full max-w-6xl space-y-6 p-6 sm:p-8">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">What needs my attention?</h1>
@@ -153,7 +153,7 @@ export default async function Home({
         })}
       </nav>
 
-      <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[380px_minmax(0,1fr)]">
         <section className={`space-y-5 ${selectedExplicit ? "hidden lg:block" : ""}`}>
           {list.length === 0 && (
             <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
@@ -260,7 +260,7 @@ function EmptyShell({
   action?: ReactNode;
 }) {
   return (
-    <main className="mx-auto max-w-2xl p-8">
+    <main className="mx-auto w-full max-w-2xl p-8">
       <div className="rounded-md border border-dashed p-8 text-center">
         <h1 className="text-lg font-semibold">{title}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{message}</p>

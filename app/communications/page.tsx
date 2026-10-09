@@ -86,7 +86,7 @@ export default async function CommunicationsPage({
   });
 
   return (
-    <main className="mx-auto max-w-5xl p-8">
+    <main className="mx-auto w-full max-w-5xl p-8">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">Communications</h1>
@@ -240,7 +240,7 @@ function FilterChip({
 
 function EmptyState({ title, message }: { title: string; message: string }) {
   return (
-    <main className="mx-auto max-w-2xl p-8">
+    <main className="mx-auto w-full max-w-2xl p-8">
       <div className="rounded-md border border-dashed p-8 text-center">
         <h1 className="text-lg font-semibold">{title}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{message}</p>

@@ -18,7 +18,7 @@ export default async function CommunicationDetailPage({
 
   if (!isSupabaseConfigured()) {
     return (
-      <main className="mx-auto max-w-2xl p-8">
+      <main className="mx-auto w-full max-w-2xl p-8">
         <div className="rounded-md border border-dashed p-8 text-center">
           <h1 className="text-lg font-semibold">Supabase is not configured</h1>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -37,7 +37,7 @@ export default async function CommunicationDetailPage({
   }
 
   return (
-    <main className="mx-auto max-w-3xl space-y-6 p-8">
+    <main className="mx-auto w-full max-w-3xl space-y-6 p-8">
       <Link href="/communications" className="text-sm text-muted-foreground hover:underline">
         ← All communications
       </Link>

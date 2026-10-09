@@ -20,7 +20,7 @@ function when(days: number | null): string | null {
 export default async function BriefPage() {
   if (!isSupabaseConfigured()) {
     return (
-      <main className="mx-auto max-w-2xl p-8">
+      <main className="mx-auto w-full max-w-2xl p-8">
         <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
           Connect Supabase first (see Settings) to see your brief.
         </p>
@@ -37,7 +37,7 @@ export default async function BriefPage() {
   const today = now.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
 
   return (
-    <main className="mx-auto max-w-3xl space-y-8 p-6 sm:p-8">
+    <main className="mx-auto w-full max-w-3xl space-y-8 p-6 sm:p-8">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-primary">{today}</p>

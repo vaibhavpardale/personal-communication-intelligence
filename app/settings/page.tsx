@@ -23,7 +23,7 @@ export default async function SettingsPage({
   const { gmail: gmailStatus } = await searchParams;
 
   return (
-    <main className="mx-auto max-w-2xl space-y-6 p-8">
+    <main className="mx-auto w-full max-w-2xl space-y-6 p-8">
       <h1 className="text-2xl font-semibold">Settings</h1>
 
       {gmailStatus === "connected" && <Banner tone="success">Gmail connected successfully.</Banner>}
