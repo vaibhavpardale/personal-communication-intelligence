@@ -2,7 +2,7 @@ import { senderAddress, type SenderPreferenceMap } from "@/lib/decision-engine/p
 import type { AttentionLevel } from "@/lib/decision-engine/types";
 import type { FeedbackType } from "@/types/feedback";
 
-/** One message, reduced to what Pith can learn from: what it was rated, and what the user did with it. */
+/** One message, reduced to what the app can learn from: what it was rated, and what the user did with it. */
 export interface LearningRow {
   sender: string;
   senderName: string | null;
@@ -16,7 +16,7 @@ export interface Suggestion {
   sender: string;
   name: string;
   kind: "mute" | "vip";
-  /** Plain-words evidence, so the user can see why Pith is asking. */
+  /** Plain-words evidence, so the user can see why the app is asking. */
   reason: string;
   /** How many messages the suggestion rests on. */
   evidence: number;
@@ -31,7 +31,7 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 /**
  * Suggestions come only from the user's own actions, never from anyone else's, and always at least
- * two data points. A sender is suggested for muting only if Pith is still showing you their mail.
+ * two data points. A sender is suggested for muting only if the app is still showing you their mail.
  */
 export function suggestPreferences(rows: LearningRow[], existing: SenderPreferenceMap): Suggestion[] {
   const bySender = new Map<string, LearningRow[]>();

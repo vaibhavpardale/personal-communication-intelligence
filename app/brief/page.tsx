@@ -43,7 +43,7 @@ export default async function BriefPage() {
           <p className="text-sm font-medium text-primary">{today}</p>
           <h1 className="text-3xl font-semibold tracking-tight">{brief.headline}</h1>
           <p className="mt-1 text-muted-foreground">
-            Pith read {brief.total} unread message{brief.total === 1 ? "" : "s"}. Here is what matters, and nothing else.
+            Read {brief.total} unread message{brief.total === 1 ? "" : "s"}. Here is what matters, and nothing else.
           </p>
         </div>
         <CopyBrief text={briefToText(brief, now)} />

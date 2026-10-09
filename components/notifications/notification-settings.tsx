@@ -1,5 +1,6 @@
 "use client";
 
+import { BRAND } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
 import type { NotifyMode, NotifyPrefs } from "@/lib/notifications/prefs";
 import { savePrefs } from "@/lib/notifications/storage";
@@ -8,7 +9,7 @@ import { usePermission, usePrefs } from "@/lib/notifications/use-prefs";
 const MODES: { value: NotifyMode; label: string; hint: string }[] = [
   { value: "urgent", label: "Only the urgent", hint: "Act Now items. Quietest." },
   { value: "deadlines", label: "Urgent and deadlines", hint: "Act Now, plus anything with a deadline coming up." },
-  { value: "review", label: "Everything worth a look", hint: "Also items Pith would ask you to review soon." },
+  { value: "review", label: "Everything worth a look", hint: "Also items worth reviewing soon." },
 ];
 
 export function NotificationSettings() {
@@ -81,7 +82,7 @@ export function NotificationSettings() {
             onChange={(e) => toggleBrowser(e.target.checked)}
             className="accent-[var(--primary)]"
           />
-          <span className="font-medium">Show pop-up notifications while Pith is open</span>
+          <span className="font-medium">Show pop-up notifications while the app is open</span>
         </label>
         {permission === "denied" && (
           <p className="text-xs text-muted-foreground">Your browser is blocking notifications for this site. Allow them in the browser&apos;s site settings, then come back.</p>
@@ -91,7 +92,7 @@ export function NotificationSettings() {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => new Notification("Pith", { body: "This is how a notification will look." })}
+            onClick={() => new Notification(BRAND.name, { body: "This is how a notification will look." })}
           >
             Send a test
           </Button>

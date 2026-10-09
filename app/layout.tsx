@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { NavBar } from "@/components/nav-bar";
+import { BRAND } from "@/lib/brand";
 import { RegisterServiceWorker } from "@/components/pwa/register-sw";
 import "./globals.css";
 
@@ -15,11 +16,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Pith: only what needs you",
-  description: "Notification intelligence for your inbox. Pith reads your mail and tells you what needs you, by when, and why.",
-  applicationName: "Pith",
+  title: `${BRAND.name}: ${BRAND.tagline.toLowerCase().replace(/\.$/, "")}`,
+  description: `${BRAND.descriptor} Reads your mail and tells you what needs you, by when, and why.`,
+  applicationName: BRAND.name,
   icons: { apple: "/icons/apple-touch-icon.png" },
-  appleWebApp: { capable: true, title: "Pith", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: BRAND.shortName, statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {

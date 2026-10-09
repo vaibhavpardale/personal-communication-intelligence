@@ -1,4 +1,5 @@
 import { DESCRIPTOR } from "@/components/brand/logo";
+import { BRAND } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,7 @@ export default async function PhonePreview({ searchParams }: { searchParams: Pro
       <div className="text-center">
         <h1 className="text-lg font-semibold">Phone preview</h1>
         <p className="text-sm text-muted-foreground">
-          This is exactly what Pith looks like on a phone. A real phone gets this layout automatically, and you can install it
+          This is exactly what the app looks like on a phone. A real phone gets this layout automatically, and you can install it
           from the browser menu (Add to Home Screen).
         </p>
       </div>
@@ -24,7 +25,7 @@ export default async function PhonePreview({ searchParams }: { searchParams: Pro
       {/* A 390 x 780 viewport is a current iPhone; the frame is only decoration */}
       <div className="rounded-[3rem] border-[10px] border-foreground bg-foreground p-0 shadow-xl">
         <iframe
-          title="Pith on a phone"
+          title={`${BRAND.name} on a phone`}
           src={src}
           className="block h-[780px] w-[390px] rounded-[2.2rem] border-0 bg-background"
         />

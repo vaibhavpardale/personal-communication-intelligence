@@ -11,7 +11,7 @@ const row = (over: Partial<LearningRow> = {}): LearningRow => ({
 });
 
 describe("suggestPreferences", () => {
-  it("suggests muting a sender the user keeps hiding, while Pith still shows their mail", () => {
+  it("suggests muting a sender the user keeps hiding, while the app still shows their mail", () => {
     const out = suggestPreferences([row({ status: "hidden" }), row({ status: "hidden" }), row()], {});
     expect(out).toHaveLength(1);
     expect(out[0]).toMatchObject({ sender: "promo@shop.com", kind: "mute", evidence: 2, name: "Promo" });
@@ -21,7 +21,7 @@ describe("suggestPreferences", () => {
     const out = suggestPreferences([row({ feedback: ["NOT_IMPORTANT"] }), row({ feedback: ["DISMISS"] })], {});
     expect(out[0].reason).toBe("You marked 2 not important from this sender.");
   });
-  it("does not suggest muting when Pith already files everything from them as noise", () => {
+  it("does not suggest muting when the app already files everything from them as noise", () => {
     expect(suggestPreferences([row({ status: "hidden", level: "NO_ACTION" }), row({ status: "hidden", level: "LOW_PRIORITY" })], {})).toEqual([]);
   });
   it("needs at least two data points", () => {

@@ -1,10 +1,11 @@
 import type { MetadataRoute } from "next";
+import { BRAND } from "@/lib/brand";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Pith",
-    short_name: "Pith",
-    description: "Notification intelligence for your inbox. Only what needs you.",
+    name: BRAND.name,
+    short_name: BRAND.shortName,
+    description: `${BRAND.descriptor} ${BRAND.tagline}`,
     start_url: "/",
     display: "standalone",
     background_color: "#ffffff",

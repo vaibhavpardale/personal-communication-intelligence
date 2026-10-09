@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { BarChart3, Inbox, ListChecks, Newspaper, Settings } from "lucide-react";
 import { Suspense } from "react";
 import { Wordmark } from "@/components/brand/logo";
+import { BRAND } from "@/lib/brand";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { ViewToggle } from "@/components/view-toggle";
 import { cn } from "cn";
@@ -27,7 +28,7 @@ export function NavBar() {
     <>
       <header className="sticky top-0 z-10 border-b bg-background/90 pt-[env(safe-area-inset-top)] backdrop-blur">
         <nav className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 text-sm sm:px-6">
-          <Link href="/" aria-label="Pith home">
+          <Link href="/" aria-label={`${BRAND.name} home`}>
             <Wordmark withTagline />
           </Link>
           <div className="ml-auto flex items-center gap-1">

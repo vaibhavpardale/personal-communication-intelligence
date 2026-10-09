@@ -36,7 +36,7 @@ export function NotificationBell() {
           new Notification(c.subject, { body: `${reasonFor(c, now)}. ${c.why ?? ""}`.trim(), tag: c.id });
         }
         if (fresh.length > MAX_POPUPS) {
-          new Notification(`${fresh.length - MAX_POPUPS} more need your attention`, { tag: "pith-more" });
+          new Notification(`${fresh.length - MAX_POPUPS} more need your attention`, { tag: "more-attention" });
         }
         fresh.forEach((c) => notified.add(c.id));
         saveSet("notified", notified);

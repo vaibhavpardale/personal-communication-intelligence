@@ -1,10 +1,10 @@
 import { DEFAULT_PREFS, type NotifyPrefs } from "@/lib/notifications/prefs";
 
 /** Browser-only storage for notification settings and what has already been seen. Every access is guarded: it can be unavailable. */
-const PREFS_KEY = "pith.notify.prefs";
-const SEEN_KEY = "pith.notify.seen";
-const NOTIFIED_KEY = "pith.notify.notified";
-export const PREFS_EVENT = "pith:prefs";
+const PREFS_KEY = "pci.notify.prefs";
+const SEEN_KEY = "pci.notify.seen";
+const NOTIFIED_KEY = "pci.notify.notified";
+export const PREFS_EVENT = "pci:prefs";
 
 function read<T>(key: string, fallback: T): T {
   try {

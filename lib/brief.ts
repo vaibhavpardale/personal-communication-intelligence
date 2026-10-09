@@ -89,7 +89,7 @@ function when(days: number | null): string {
 
 /** Plain text, ready to paste into Slack or an email. */
 export function briefToText(brief: Brief, date: Date = new Date()): string {
-  const lines = [`Pith brief, ${date.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}`, brief.headline, ""];
+  const lines = [`Daily brief, ${date.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}`, brief.headline, ""];
   const section = (title: string, items: BriefItem[]) => {
     if (items.length === 0) return;
     lines.push(title);
