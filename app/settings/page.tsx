@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { NotificationSettings } from "@/components/notifications/notification-settings";
 import { SyncButton } from "@/components/gmail/sync-button";
 import { DisconnectButton } from "@/components/gmail/disconnect-button";
 import { DeleteDataButton } from "@/components/gmail/delete-data-button";
@@ -46,6 +47,15 @@ export default async function SettingsPage({
           ) : (
             <GmailPanel />
           )}
+        </CardContent>
+      </Card>
+
+      <Card id="notifications" className="scroll-mt-20">
+        <CardHeader>
+          <CardTitle>Notifications</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <NotificationSettings />
         </CardContent>
       </Card>
     </main>

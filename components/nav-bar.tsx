@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Wordmark } from "@/components/brand/logo";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { cn } from "cn";
 
 const LINKS = [
   { href: "/", label: "Attention" },
+  { href: "/brief", label: "Brief" },
   { href: "/communications", label: "Communications" },
   { href: "/evaluation", label: "Evaluation" },
   { href: "/settings", label: "Settings" },
@@ -40,6 +42,7 @@ export function NavBar() {
               </Link>
             );
           })}
+          <NotificationBell />
         </div>
       </nav>
     </header>
