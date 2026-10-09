@@ -1,19 +1,20 @@
 import { getSupabaseClient } from "@/lib/db/supabase-client";
 import type { EvaluationExample } from "@/lib/evaluation/metrics";
-import type { NewEvaluationDatasetEntry, EvaluationDatasetEntry, DatasetSplit } from "@/types/evaluation";
+import type { NewEvaluationDatasetEntry, EvaluationDatasetEntry, DatasetSplit, EvaluationDataset } from "@/types/evaluation";
 import type { CommunicationCategory, CommunicationIntent } from "@/types/communication";
 import type { AttentionLevel } from "@/lib/decision-engine/types";
 
-export type EvaluationExampleRow = EvaluationExample & { subject: string; dataset_split: DatasetSplit };
+export type EvaluationExampleRow = EvaluationExample & { subject: string; dataset_split: DatasetSplit; dataset: EvaluationDataset };
 
 type OneOrMany<T> = T | T[] | null;
 
 export interface RawEvaluationRow {
   communication_id: string;
-  expected_category: CommunicationCategory;
-  expected_intent: CommunicationIntent;
+  expected_category: CommunicationCategory | null;
+  expected_intent: CommunicationIntent | null;
   expected_attention_level: AttentionLevel;
   dataset_split: DatasetSplit;
+  dataset?: EvaluationDataset;
   communications: {
     subject: string;
     communication_analysis: OneOrMany<{ category: CommunicationCategory; intent: CommunicationIntent }>;
@@ -39,6 +40,7 @@ export function mapEvaluationRow(row: RawEvaluationRow): EvaluationExampleRow {
     expected_intent: row.expected_intent,
     expected_attention_level: row.expected_attention_level,
     dataset_split: row.dataset_split,
+    dataset: row.dataset ?? "golden",
     actual_category: analysis?.category ?? null,
     actual_intent: analysis?.intent ?? null,
     actual_attention_level: attention?.level ?? null,
@@ -47,10 +49,15 @@ export function mapEvaluationRow(row: RawEvaluationRow): EvaluationExampleRow {
 
 export async function listEvaluationExamples(): Promise<EvaluationExampleRow[]> {
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from("evaluation_dataset").select(
-    `communication_id, expected_category, expected_intent, expected_attention_level, dataset_split,
-     communications ( subject, communication_analysis(category,intent), attention_decisions(level) )`,
-  );
+  const embed = `communications ( subject, communication_analysis(category,intent), attention_decisions(level) )`;
+  const columns = "communication_id, expected_category, expected_intent, expected_attention_level, dataset_split";
+
+  let { data, error } = await supabase.from("evaluation_dataset").select(`${columns}, dataset, ${embed}`);
+
+  // Migration 0005 (the `dataset` column) may not be applied yet; treat every row as golden then.
+  if (error && /dataset/.test(error.message) && !/dataset_split/.test(error.message)) {
+    ({ data, error } = await supabase.from("evaluation_dataset").select(`${columns}, ${embed}`));
+  }
 
   if (error) {
     throw new Error(`Failed to list evaluation dataset: ${error.message}`);

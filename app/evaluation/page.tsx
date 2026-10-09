@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { listEvaluationExamples } from "@/lib/db/evaluation";
+import { listEvaluationExamples, type EvaluationExampleRow } from "@/lib/db/evaluation";
 import { isSupabaseConfigured } from "@/lib/config";
 import { ATTENTION_LEVELS } from "@/lib/decision-engine/types";
 import { summarizeEvaluation } from "@/lib/evaluation/metrics";
@@ -42,21 +42,55 @@ export default async function EvaluationPage() {
     );
   }
 
+  const sections = [
+    {
+      key: "golden",
+      title: "Golden set (synthetic samples)",
+      note: "Frozen, hand-labeled sample communications.",
+    },
+    {
+      key: "gmail",
+      title: "Real Gmail (hand-reviewed labels)",
+      note: "Labels cover attention level only, so category and intent accuracy do not apply.",
+    },
+  ] as const;
+
+  return (
+    <main className="mx-auto max-w-4xl space-y-10 p-8">
+      <h1 className="text-2xl font-semibold">Evaluation</h1>
+      {sections.map((section) => {
+        const rows = examples.filter((e) => e.dataset === section.key);
+        if (rows.length === 0) return null;
+        return <EvaluationSection key={section.key} title={section.title} note={section.note} examples={rows} />;
+      })}
+    </main>
+  );
+}
+
+function EvaluationSection({
+  title,
+  note,
+  examples,
+}: {
+  title: string;
+  note: string;
+  examples: EvaluationExampleRow[];
+}) {
   const summary = summarizeEvaluation(examples);
 
   return (
-    <main className="mx-auto max-w-4xl space-y-6 p-8">
+    <section className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Evaluation</h1>
+        <h2 className="text-xl font-semibold">{title}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          {summary.evaluatedCount} of {summary.totalDatasetSize} golden examples analyzed
-          {summary.pendingCount > 0 && ` · ${summary.pendingCount} pending analysis`}
+          {summary.evaluatedCount} of {summary.totalDatasetSize} examples analyzed
+          {summary.pendingCount > 0 && ` · ${summary.pendingCount} pending analysis`} · {note}
         </p>
       </div>
 
       {summary.evaluatedCount === 0 ? (
         <EmptyShell
-          title="No metrics yet — nothing in the golden dataset has been analyzed"
+          title="No metrics yet — nothing in this dataset has been analyzed"
           message="Go to Communications and run Analyze All (this requires a configured OpenAI API key), then come back to this page."
         />
       ) : (
@@ -130,7 +164,7 @@ export default async function EvaluationPage() {
           </Card>
         </>
       )}
-    </main>
+    </section>
   );
 }
 

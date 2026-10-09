@@ -3,8 +3,8 @@ import { ATTENTION_LEVELS, type AttentionLevel } from "@/lib/decision-engine/typ
 
 export interface EvaluationExample {
   communication_id: string;
-  expected_category: CommunicationCategory;
-  expected_intent: CommunicationIntent;
+  expected_category: CommunicationCategory | null;
+  expected_intent: CommunicationIntent | null;
   expected_attention_level: AttentionLevel;
   actual_category: CommunicationCategory | null;
   actual_intent: CommunicationIntent | null;
@@ -34,7 +34,8 @@ function computeAccuracy(
   expectedKey: "expected_category" | "expected_intent" | "expected_attention_level",
   actualKey: "actual_category" | "actual_intent" | "actual_attention_level",
 ): number | null {
-  const evaluated = examples.filter((e) => e[actualKey] != null);
+  // Rows without an expected value (real-inbox labels carry no category/intent) are skipped.
+  const evaluated = examples.filter((e) => e[actualKey] != null && e[expectedKey] != null);
   if (evaluated.length === 0) return null;
   const correct = evaluated.filter((e) => e[expectedKey] === e[actualKey]).length;
   return correct / evaluated.length;

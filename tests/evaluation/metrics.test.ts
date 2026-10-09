@@ -48,6 +48,18 @@ describe("computeCategoryAccuracy / computeIntentAccuracy / computeDecisionAccur
   });
 });
 
+describe("rows without an expected category or intent", () => {
+  it("are skipped for category/intent accuracy but still count for decision accuracy", () => {
+    const examples = [
+      example({ expected_category: null, expected_intent: null, expected_attention_level: "WATCH", actual_attention_level: "WATCH" }),
+      example({ expected_category: null, expected_intent: null, expected_attention_level: "WATCH", actual_attention_level: "REVIEW" }),
+    ];
+    expect(computeCategoryAccuracy(examples)).toBeNull();
+    expect(computeIntentAccuracy(examples)).toBeNull();
+    expect(computeDecisionAccuracy(examples)).toBe(0.5);
+  });
+});
+
 describe("computeClassMetrics", () => {
   it("computes precision and recall for a class with mixed results", () => {
     const examples = [
