@@ -27,7 +27,7 @@ export function NavBar() {
     <>
       <header className="sticky top-0 z-10 border-b bg-background/90 pt-[env(safe-area-inset-top)] backdrop-blur">
         <nav className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 text-sm sm:px-6">
-          <Link href="/" aria-label="Heed home">
+          <Link href="/" aria-label="Pith home">
             <Wordmark withTagline />
           </Link>
           <div className="ml-auto flex items-center gap-1">

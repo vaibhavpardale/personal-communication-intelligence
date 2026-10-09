@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import type { SenderPreference, SenderPreferenceMap } from "@/lib/decision-engine/preferences";
 import type { Suggestion } from "@/lib/learning";
 
-/** The senders Heed treats specially, and what it has noticed from the user's own behavior. */
+/** The senders Pith treats specially, and what it has noticed from the user's own behavior. */
 export function SenderPreferencesPanel({ preferences, suggestions }: { preferences: SenderPreferenceMap; suggestions: Suggestion[] }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
@@ -38,10 +38,10 @@ export function SenderPreferencesPanel({ preferences, suggestions }: { preferenc
   return (
     <div className="space-y-6 text-sm">
       <div className="space-y-2">
-        <h3 className="font-medium">What Heed has noticed</h3>
+        <h3 className="font-medium">What Pith has noticed</h3>
         {visible.length === 0 ? (
           <p className="text-muted-foreground">
-            Nothing yet. As you use Done, Hide and &ldquo;Was this useful?&rdquo;, Heed will suggest who to mute or mark VIP, and always explain why.
+            Nothing yet. As you use Done, Hide and &ldquo;Was this useful?&rdquo;, Pith will suggest who to mute or mark VIP, and always explain why.
           </p>
         ) : (
           <ul className="space-y-2">

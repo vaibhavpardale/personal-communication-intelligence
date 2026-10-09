@@ -2,9 +2,9 @@ import type { AttentionLevel } from "@/lib/decision-engine/types";
 
 /**
  * What deserves an interruption is personal, so it is the user's setting, not a global rule:
- *  - urgent:    only things Heed rates Act Now
+ *  - urgent:    only things Pith rates Act Now
  *  - deadlines: Act Now, plus anything with a deadline coming up (the default)
- *  - review:    also everything Heed would ask you to look at soon
+ *  - review:    also everything Pith would ask you to look at soon
  */
 export type NotifyMode = "urgent" | "deadlines" | "review";
 
@@ -49,7 +49,7 @@ export function daysUntil(deadline: string, now: Date): number {
 
 export function shouldNotify(c: Candidate, prefs: NotifyPrefs, now: Date = new Date()): boolean {
   if (c.level === "ACT_NOW") return true;
-  // A sender you marked VIP is worth hearing about as soon as Heed would ask you to look.
+  // A sender you marked VIP is worth hearing about as soon as Pith would ask you to look.
   if (c.vip && c.level === "REVIEW") return true;
   if (prefs.mode === "review" && c.level === "REVIEW") return true;
   // Watch means "nothing to do yet", so a date on a Watch item never interrupts: the model often puts the

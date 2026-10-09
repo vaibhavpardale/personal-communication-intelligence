@@ -19,7 +19,7 @@ export function DetailPanel({
   communication: CommunicationWithAttention;
   /** The user's expected level for the real-inbox evaluation, if already set. */
   evalLabel?: AttentionLevel | null;
-  /** How the user has told Heed to treat this sender, if at all. */
+  /** How the user has told Pith to treat this sender, if at all. */
   senderPreference?: SenderPreference | null;
   /** Where to go once the item is marked done or hidden (the feed passes the next item). */
   afterActionHref?: string;

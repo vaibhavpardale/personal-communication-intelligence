@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { senderAddress, type SenderPreference } from "@/lib/decision-engine/preferences";
 
-/** Tell Heed how to treat this sender from now on. It re-rates their mail straight away, with no AI calls. */
+/** Tell Pith how to treat this sender from now on. It re-rates their mail straight away, with no AI calls. */
 export function SenderControl({ sender, preference }: { sender: string; preference: SenderPreference | null }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);

@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Heed",
-    short_name: "Heed",
+    name: "Pith",
+    short_name: "Pith",
     description: "Notification intelligence for your inbox. Only what needs you.",
     start_url: "/",
     display: "standalone",

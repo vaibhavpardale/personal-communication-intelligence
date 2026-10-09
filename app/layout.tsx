@@ -15,11 +15,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Heed: only what needs you",
-  description: "Notification intelligence for your inbox. Heed reads your mail and tells you what needs you, by when, and why.",
-  applicationName: "Heed",
+  title: "Pith: only what needs you",
+  description: "Notification intelligence for your inbox. Pith reads your mail and tells you what needs you, by when, and why.",
+  applicationName: "Pith",
   icons: { apple: "/icons/apple-touch-icon.png" },
-  appleWebApp: { capable: true, title: "Heed", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "Pith", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
