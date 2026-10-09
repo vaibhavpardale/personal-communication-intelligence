@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 
 const NEEDS_ATTENTION_LEVELS: AttentionLevel[] = ["ACT_NOW", "REVIEW", "WATCH"];
 
-type Tab = "attention" | AttentionLevel | "low" | "done";
+type Tab = "attention" | AttentionLevel | "low" | "done" | "hidden";
 
 const isUnread = (c: CommunicationWithAttention) => (c.user_status ?? "unread") === "unread";
 const isLowOrNoise = (c: CommunicationWithAttention) =>
@@ -71,7 +71,8 @@ export default async function Home({
   const visible = showSample ? all : all.filter((c) => c.source !== "sample");
 
   const unread = visible.filter(isUnread);
-  const done = visible.filter((c) => !isUnread(c));
+  const done = visible.filter((c) => c.user_status === "read");
+  const hidden = visible.filter((c) => c.user_status === "hidden");
   const unanalyzedCount = unread.filter((c) => !c.attention).length;
 
   const byLevel = (level: AttentionLevel) => unread.filter((c) => c.attention?.level === level);
@@ -79,11 +80,11 @@ export default async function Home({
   const lowAndNoise = unread.filter(isLowOrNoise);
 
   const tab: Tab =
-    tabParam === "done" || tabParam === "low" || (NEEDS_ATTENTION_LEVELS as string[]).includes(tabParam ?? "")
+    tabParam === "done" || tabParam === "hidden" || tabParam === "low" || (NEEDS_ATTENTION_LEVELS as string[]).includes(tabParam ?? "")
       ? (tabParam as Tab)
       : "attention";
 
-  const list = tab === "attention" ? needsAttention : tab === "low" ? lowAndNoise : tab === "done" ? done : byLevel(tab);
+  const list = tab === "attention" ? needsAttention : tab === "low" ? lowAndNoise : tab === "done" ? done : tab === "hidden" ? hidden : byLevel(tab);
   const hrefFor = (id: string) => (tab === "attention" ? `/?id=${id}` : `/?tab=${tab}&id=${id}`);
   const explicitItem = idParam ? list.find((c) => c.id === idParam) : undefined;
   const selectedExplicit = Boolean(explicitItem);
@@ -101,7 +102,8 @@ export default async function Home({
       count: byLevel(level).length,
     })),
     { key: "low", label: "Low priority & noise", count: lowAndNoise.length },
-    { key: "done", label: "Done & hidden", count: done.length },
+    { key: "done", label: "Done", count: done.length },
+    { key: "hidden", label: "Hidden", count: hidden.length },
   ];
 
   return (
@@ -150,7 +152,11 @@ export default async function Home({
         <section className={`space-y-5 ${selectedExplicit ? "hidden lg:block" : ""}`}>
           {list.length === 0 && (
             <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-              {tab === "done" ? "Nothing marked done or hidden yet." : "All caught up. Nothing here."}
+              {tab === "done"
+                ? "Nothing marked done yet. Use Done when you've seen or handled an item."
+                : tab === "hidden"
+                  ? "Nothing hidden. Use Hide for items that aren't relevant to you."
+                  : "All caught up. Nothing here."}
             </p>
           )}
           {tab === "attention"

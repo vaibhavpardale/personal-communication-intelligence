@@ -7,8 +7,8 @@ import { cn } from "cn";
 import type { UserStatus } from "@/types/communication";
 
 /**
- * "Done" and "Hide" take a communication off the attention screen; "Restore"
- * brings it back. Nothing is ever deleted here, and Gmail is read-only, so the
+ * "Done" means you have seen or handled it; "Hide" means it is not relevant to you.
+ * Both take it off the attention screen into their own tab, and "Restore" brings it back. Nothing is ever deleted here, and Gmail is read-only, so the
  * original email and the evaluation data are never touched.
  */
 export function ItemActions({

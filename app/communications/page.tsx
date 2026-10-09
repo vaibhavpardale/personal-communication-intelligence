@@ -73,11 +73,16 @@ export default async function CommunicationsPage({
   const query = filters.q?.trim().toLowerCase() ?? "";
   const visible = communications.filter((c) => {
     if (!showSample && c.source === "sample") return false;
-    const archived = (c.user_status ?? "unread") !== "unread";
-    if (filters.level === "ARCHIVED" ? !archived : archived) return false;
-    if (filters.level === "UNANALYZED" ? Boolean(c.attention) : filters.level && c.attention?.level !== filters.level) return false;
     if (query && !`${c.subject} ${c.sender} ${c.sender_name ?? ""}`.toLowerCase().includes(query)) return false;
-    return true;
+
+    // Done and Hidden are their own views; every other view shows unread items only.
+    const status = c.user_status ?? "unread";
+    if (filters.level === "DONE") return status === "read";
+    if (filters.level === "HIDDEN") return status === "hidden";
+    if (status !== "unread") return false;
+
+    if (filters.level === "UNANALYZED") return !c.attention;
+    return !filters.level || c.attention?.level === filters.level;
   });
 
   return (
@@ -119,8 +124,11 @@ export default async function CommunicationsPage({
           <FilterChip href={hrefWith(filters, { level: "UNANALYZED" })} active={filters.level === "UNANALYZED"}>
             Not analyzed
           </FilterChip>
-          <FilterChip href={hrefWith(filters, { level: "ARCHIVED" })} active={filters.level === "ARCHIVED"}>
-            Done &amp; hidden
+          <FilterChip href={hrefWith(filters, { level: "DONE" })} active={filters.level === "DONE"}>
+            Done
+          </FilterChip>
+          <FilterChip href={hrefWith(filters, { level: "HIDDEN" })} active={filters.level === "HIDDEN"}>
+            Hidden
           </FilterChip>
           {sampleCount > 0 && (
             <span className="ml-auto">
@@ -183,7 +191,15 @@ export default async function CommunicationsPage({
                   {new Date(c.received_at).toLocaleDateString()}
                 </TableCell>
                 <TableCell>
-                  {c.analysis ? <Badge>Analyzed</Badge> : <Badge variant="outline">Not analyzed</Badge>}
+                  {c.user_status === "read" ? (
+                    <Badge variant="secondary">Done</Badge>
+                  ) : c.user_status === "hidden" ? (
+                    <Badge variant="outline">Hidden</Badge>
+                  ) : c.analysis ? (
+                    <Badge>Analyzed</Badge>
+                  ) : (
+                    <Badge variant="outline">Not analyzed</Badge>
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex flex-col items-end gap-1">
