@@ -18,7 +18,8 @@ async function seedCommunications(
 ): Promise<{ id: string; subject: string }[]> {
   const { count, error: countError } = await supabase
     .from("communications")
-    .select("*", { count: "exact", head: true });
+    .select("*", { count: "exact", head: true })
+    .eq("source", "sample");
 
   if (countError) {
     console.error(`Failed to check existing communications: ${countError.message}`);
@@ -27,10 +28,10 @@ async function seedCommunications(
 
   if ((count ?? 0) > 0) {
     console.log(
-      `communications table already has ${count} row(s); skipping insert (will still ` +
+      `communications table already has ${count} sample row(s); skipping insert (will still ` +
         `seed/update personal context and the evaluation dataset).`,
     );
-    const { data, error } = await supabase.from("communications").select("id, subject");
+    const { data, error } = await supabase.from("communications").select("id, subject").eq("source", "sample");
     if (error) {
       console.error(`Failed to load existing communications: ${error.message}`);
       process.exit(1);
