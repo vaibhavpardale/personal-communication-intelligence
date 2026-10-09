@@ -15,10 +15,13 @@ export function ItemActions({
   id,
   status,
   className,
+  afterHref,
 }: {
   id: string;
   status: UserStatus;
   className?: string;
+  /** Where to go after marking an unread item done/hidden (e.g. the next item in the list). */
+  afterHref?: string;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -38,7 +41,8 @@ export function ItemActions({
         setError(body.error ?? `Failed (HTTP ${res.status}).`);
         return;
       }
-      router.refresh();
+      if (afterHref && status === "unread" && next !== "unread") router.push(afterHref);
+      else router.refresh();
     } finally {
       setBusy(false);
     }

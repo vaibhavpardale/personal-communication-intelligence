@@ -1,9 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AnalyzeAllButton } from "@/components/communications/analyze-all-button";
-import { ItemActions } from "@/components/communications/item-actions";
+import { DetailPanel } from "@/components/communications/detail-panel";
 import { SyncButton } from "@/components/gmail/sync-button";
 import { SampleToggle } from "@/components/sample-toggle";
 import { isGmailConfigured, isSupabaseConfigured } from "@/lib/config";
@@ -25,8 +24,12 @@ const isUnread = (c: CommunicationWithAttention) => (c.user_status ?? "unread") 
 const isLowOrNoise = (c: CommunicationWithAttention) =>
   !c.attention || c.attention.level === "LOW_PRIORITY" || c.attention.level === "NO_ACTION";
 
-export default async function Home({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
-  const { tab: tabParam } = await searchParams;
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string; id?: string }>;
+}) {
+  const { tab: tabParam, id: idParam } = await searchParams;
 
   if (!isSupabaseConfigured()) {
     return (
@@ -80,6 +83,16 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
       ? (tabParam as Tab)
       : "attention";
 
+  const list = tab === "attention" ? needsAttention : tab === "low" ? lowAndNoise : tab === "done" ? done : byLevel(tab);
+  const hrefFor = (id: string) => (tab === "attention" ? `/?id=${id}` : `/?tab=${tab}&id=${id}`);
+  const explicitItem = idParam ? list.find((c) => c.id === idParam) : undefined;
+  const selectedExplicit = Boolean(explicitItem);
+  // With nothing chosen (or the chosen item just handled), the first item opens on wide screens.
+  const selected = explicitItem ?? list[0];
+  const selectedIndex = selected ? list.indexOf(selected) : -1;
+  const neighbour = selectedIndex >= 0 ? (list[selectedIndex + 1] ?? list[selectedIndex - 1]) : undefined;
+  const nextHref = neighbour ? hrefFor(neighbour.id) : tab === "attention" ? "/" : `/?tab=${tab}`;
+
   const tabs: { key: Tab; label: string; count: number }[] = [
     { key: "attention", label: "Needs attention", count: needsAttention.length },
     ...NEEDS_ATTENTION_LEVELS.map((level) => ({
@@ -92,7 +105,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
   ];
 
   return (
-    <main className="mx-auto max-w-4xl space-y-6 p-6 sm:p-8">
+    <main className="mx-auto max-w-6xl space-y-6 p-6 sm:p-8">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">What needs my attention?</h1>
@@ -133,113 +146,91 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
         })}
       </nav>
 
-      {tab === "attention" &&
-        (needsAttention.length === 0 ? (
-          <CaughtUp />
-        ) : (
-          NEEDS_ATTENTION_LEVELS.map((level) => {
-            const items = byLevel(level);
-            if (items.length === 0) return null;
-            const meta = LEVEL_META[level];
-            return (
-              <section key={level} className="space-y-3">
-                <h2 className="flex items-center gap-2 text-sm font-semibold">
-                  <span className={`size-2.5 rounded-full ${meta.dot}`} />
-                  {meta.label}
-                  <span className="font-normal text-muted-foreground">· {meta.description}</span>
-                </h2>
-                {items.map((c) => (
-                  <FeedItem key={c.id} item={c} />
-                ))}
-              </section>
-            );
-          })
-        ))}
+      <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)]">
+        <section className={`space-y-5 ${selectedExplicit ? "hidden lg:block" : ""}`}>
+          {list.length === 0 && (
+            <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+              {tab === "done" ? "Nothing marked done or hidden yet." : "All caught up. Nothing here."}
+            </p>
+          )}
+          {tab === "attention"
+            ? NEEDS_ATTENTION_LEVELS.map((level) => {
+                const items = byLevel(level);
+                if (items.length === 0) return null;
+                const meta = LEVEL_META[level];
+                return (
+                  <div key={level} className="space-y-2">
+                    <h2 className="flex items-center gap-2 text-sm font-semibold">
+                      <span className={`size-2.5 rounded-full ${meta.dot}`} />
+                      {meta.label}
+                      <span className="font-normal text-muted-foreground">· {meta.description}</span>
+                    </h2>
+                    {items.map((c) => (
+                      <ListRow key={c.id} item={c} href={hrefFor(c.id)} selected={c.id === selected?.id} />
+                    ))}
+                  </div>
+                );
+              })
+            : list.map((c) => (
+                <ListRow key={c.id} item={c} href={hrefFor(c.id)} selected={c.id === selected?.id} />
+              ))}
+        </section>
 
-      {(NEEDS_ATTENTION_LEVELS as string[]).includes(tab) &&
-        (byLevel(tab as AttentionLevel).length === 0 ? (
-          <CaughtUp />
-        ) : (
-          <div className="space-y-3">
-            {byLevel(tab as AttentionLevel).map((c) => (
-              <FeedItem key={c.id} item={c} />
-            ))}
-          </div>
-        ))}
-
-      {tab === "low" && <CompactList items={lowAndNoise} empty="Nothing here." />}
-      {tab === "done" && <CompactList items={done} empty="Nothing marked done or hidden yet." />}
+        <aside className={`${selectedExplicit ? "" : "hidden lg:block"}`}>
+          {selected ? (
+            <div className="lg:sticky lg:top-16 lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto lg:rounded-xl lg:border lg:p-5">
+              <Link
+                href={tab === "attention" ? "/" : `/?tab=${tab}`}
+                className="mb-4 inline-block text-sm text-muted-foreground hover:underline lg:hidden"
+              >
+                ← Back to list
+              </Link>
+              <DetailPanel communication={selected} afterActionHref={nextHref} />
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+              Select an item to see why it matters and what to do.
+            </p>
+          )}
+        </aside>
+      </div>
     </main>
   );
 }
 
-function FeedItem({ item: c }: { item: CommunicationWithAttention }) {
+function ListRow({
+  item: c,
+  href,
+  selected,
+}: {
+  item: CommunicationWithAttention;
+  href: string;
+  selected: boolean;
+}) {
   const meta = c.attention ? LEVEL_META[c.attention.level] : null;
   return (
-    <article className={`flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-start ${meta?.tint ?? ""}`}>
-      <Link href={`/communications/${c.id}`} className="min-w-0 flex-1 space-y-1 hover:opacity-90">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="truncate">
-            {c.sender_name ?? c.sender} · {formatRelative(c.received_at)}
-            {c.source === "sample" && " · sample"}
-          </span>
-          {c.analysis && (
-            <Badge variant="outline" className="shrink-0">
-              {c.analysis.category}
-            </Badge>
-          )}
-        </div>
-        <h3 className="font-medium leading-snug">{c.subject}</h3>
-        {c.attention && (
-          <>
-            <p className="line-clamp-2 text-sm text-foreground/80">
-              {c.attention.why_it_matters ?? c.attention.reason}
-            </p>
-            {c.attention.what_you_can_do && (
-              <p className="line-clamp-2 text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">Next: </span>
-                {c.attention.what_you_can_do}
-              </p>
-            )}
-          </>
-        )}
-      </Link>
-      <ItemActions id={c.id} status="unread" className="shrink-0 sm:flex-col sm:items-stretch" />
-    </article>
-  );
-}
-
-function CompactList({ items, empty }: { items: CommunicationWithAttention[]; empty: string }) {
-  if (items.length === 0) {
-    return <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">{empty}</p>;
-  }
-  return (
-    <ul className="divide-y rounded-lg border text-sm">
-      {items.map((c) => (
-        <li key={c.id} className="flex flex-wrap items-center gap-3 px-3 py-2">
-          <span
-            className={`size-2 shrink-0 rounded-full ${c.attention ? LEVEL_META[c.attention.level].dot : "bg-border"}`}
-          />
-          <Link href={`/communications/${c.id}`} className="min-w-0 flex-1 truncate hover:underline">
-            <span className="text-muted-foreground">{c.sender_name ?? c.sender} · </span>
-            {c.subject}
-          </Link>
-          <span className="shrink-0 text-xs text-muted-foreground">{formatRelative(c.received_at)}</span>
-          <Badge variant="outline" className="shrink-0">
-            {c.attention ? LEVEL_META[c.attention.level].label : "Not analyzed"}
-          </Badge>
-          <ItemActions id={c.id} status={c.user_status ?? "unread"} />
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function CaughtUp() {
-  return (
-    <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-      All caught up. Nothing needs your attention here.
-    </p>
+    <Link
+      href={href}
+      aria-current={selected ? "true" : undefined}
+      className={`block rounded-lg border p-3 transition-colors ${
+        selected ? "border-foreground/40 bg-muted" : "hover:bg-muted/60"
+      }`}
+    >
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <span className={`size-2 shrink-0 rounded-full ${meta?.dot ?? "bg-border"}`} />
+        <span className="truncate">
+          {c.sender_name ?? c.sender}
+          {c.source === "sample" && " · sample"}
+        </span>
+        <span className="ml-auto shrink-0">{formatRelative(c.received_at)}</span>
+      </div>
+      <h3 className="mt-1 line-clamp-2 text-sm font-medium leading-snug">{c.subject}</h3>
+      {c.attention && (
+        <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+          {c.attention.why_it_matters ?? c.attention.reason}
+        </p>
+      )}
+    </Link>
   );
 }
 
