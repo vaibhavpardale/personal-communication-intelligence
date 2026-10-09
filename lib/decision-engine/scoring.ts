@@ -6,6 +6,8 @@ function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
 }
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 const INTENT_URGENCY: Record<string, number> = {
   ACTION_REQUIRED: 5,
   ALERT: 4,
@@ -24,13 +26,24 @@ export function scoreUrgency(input: DecisionEngineInput): number {
 }
 
 /** Whether the communication asks the user to actually do something. */
-export function scoreActionRequired(input: DecisionEngineInput): number {
+export function scoreActionRequired(input: DecisionEngineInput, now: Date = new Date()): number {
   const hasRequestedAction = Boolean(input.requested_action && input.requested_action.trim().length > 0);
   if (!hasRequestedAction) return 0;
   // A promotion's call to action ("Order now", "Register") is the sender's ask,
   // not an obligation on the user.
   if (input.intent === "PROMOTION") return 0;
-  return input.intent === "ACTION_REQUIRED" ? 5 : 3;
+  if (input.intent === "ACTION_REQUIRED") return 5;
+
+  // The model often labels an overdue bill as ALERT rather than ACTION_REQUIRED.
+  // An explicit ask with a deadline within 3 days (or already missed) is an
+  // obligation regardless of the intent label.
+  if (input.deadline) {
+    const deadline = new Date(input.deadline);
+    if (!Number.isNaN(deadline.getTime()) && (deadline.getTime() - now.getTime()) / MS_PER_DAY <= 3) {
+      return 5;
+    }
+  }
+  return 3;
 }
 
 const CATEGORY_IMPACT_BASE: Record<string, number> = {
@@ -60,8 +73,6 @@ export function scoreImpact(input: DecisionEngineInput): number {
 
   return clamp(score, 0, 5);
 }
-
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /** How close the deadline (or event date, as a fallback) is to `now`. */
 export function scoreDeadlineProximity(input: DecisionEngineInput, now: Date): number {

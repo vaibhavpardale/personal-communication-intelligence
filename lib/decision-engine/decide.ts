@@ -85,7 +85,7 @@ export function decideAttention(
 
   const scores: DecisionFactorScores = {
     urgency: scoreUrgency(input),
-    action_required: scoreActionRequired(input),
+    action_required: scoreActionRequired(input, now),
     impact: scoreImpact(input),
     personal_relevance: relevance.score,
     deadline_proximity: scoreDeadlineProximity(input, now),

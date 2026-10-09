@@ -139,6 +139,21 @@ describe("decideAttention", () => {
     expect(tomorrow.scores.deadline_proximity).toBeGreaterThan(soon.scores.deadline_proximity);
   });
 
+  it("treats an explicit ask with an overdue or imminent deadline as fully required", () => {
+    const overdue = decideAttention(
+      baseInput({ intent: "ALERT", requested_action: "pay immediately", deadline: daysFromNow(-3) }),
+      [],
+      NOW,
+    );
+    const distant = decideAttention(
+      baseInput({ intent: "ALERT", requested_action: "pay", deadline: daysFromNow(10) }),
+      [],
+      NOW,
+    );
+    expect(overdue.scores.action_required).toBe(5);
+    expect(distant.scores.action_required).toBe(3);
+  });
+
   it("does not count a promotion's call to action as a required action", () => {
     const promo = decideAttention(
       baseInput({ category: "MARKETING", intent: "PROMOTION", requested_action: "Order now" }),
